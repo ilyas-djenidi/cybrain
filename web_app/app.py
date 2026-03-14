@@ -64,12 +64,25 @@ def scan_url():
         scanner = UrlScanner(url)
         results = scanner.scan()
         
-        print(f"[SCANNER] Done. Found {len(results)} issues.")
+        # Calculate risk based on worst severity found
+        risk = "INFO"
+        if len(results) > 0:
+            if hasattr(scanner, '_calc_overall_risk'):
+                 risk = scanner._calc_overall_risk()
+            else:
+                sevs = [r.get("severity", "INFO") for r in results]
+                for s in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+                    if s in sevs:
+                        risk = s
+                        break
+        
+        print(f"[SCANNER] Done. Found {len(results)} issues. Risk: {risk}")
         
         return jsonify({
             "results": results,
             "total": len(results),
-            "url": url
+            "url": url,
+            "risk": risk
         })
         
     except Exception as e:
