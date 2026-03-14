@@ -1,0 +1,23 @@
+{
+    "target": "http://127.0.0.1:5000",
+    "headers": {
+        "X-Frame-Options": "Missing",
+        "X-XSS-Protection": "Missing",
+        "X-Content-Type-Options": "Missing",
+        "Content-Security-Policy": "Missing",
+        "Strict-Transport-Security": "Missing",
+        "Referrer-Policy": "Missing",
+        "Permissions-Policy": "Missing"
+    },
+    "fingerprint": {
+        "server": "Werkzeug/3.1.3 Python/3.11.5",
+        "x_powered_by": "Unknown"
+    },
+    "files": {
+        "robots.txt": false,
+        "sitemap.xml": false
+    },
+    "sensitive_paths": {
+        "/console": 200
+    }
+}

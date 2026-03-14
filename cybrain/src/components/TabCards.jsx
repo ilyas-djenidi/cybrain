@@ -1,0 +1,67 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Cpu, Binary, Zap } from 'lucide-react';
+
+const cards = [
+    {
+        id: 'config',
+        title: 'Config Analysis',
+        description: 'Deep scan Apache configurations for security breaches.',
+        icon: Binary,
+        color: 'from-cyan-500 to-blue-500'
+    },
+    {
+        id: 'upload',
+        title: 'Upload File',
+        description: 'Analyze .htaccess and .conf files for misconfigurations.',
+        icon: Cpu,
+        color: 'from-purple-500 to-pink-500'
+    },
+    {
+        id: 'url',
+        title: 'Scan URL',
+        description: 'Test live web endpoints for common vulnerabilities.',
+        icon: Zap,
+        color: 'from-cyan-400 to-purple-500'
+    }
+];
+
+const TabCards = ({ onSelect }) => {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-0 w-full max-w-5xl">
+            {cards.map((card, index) => (
+                <motion.div
+                    key={card.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 + 0.5 }}
+                    onClick={() => onSelect(card.id)}
+                    className="group relative cursor-pointer"
+                >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r opacity-20 group-hover:opacity-100 transition duration-500 blur-xl rounded-2xl"></div>
+                    <div className="relative bg-cyber-panel/80 backdrop-blur-xl border border-white/5 p-8 rounded-2xl hover:border-cyan-500/50 transition-all duration-300 pointer-events-auto shadow-2xl overflow-hidden group">
+                        {/* Decorative Gradient Inner */}
+                        <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-10 transition-opacity blur-3xl`}></div>
+                        
+                        <div className={`w-14 h-14 bg-gradient-to-br ${card.color} rounded-xl flex items-center justify-center mb-6 shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                            <card.icon className="w-8 h-8 text-white" />
+                        </div>
+                        
+                        <h3 className="font-orbitron font-bold text-xl text-white mb-3 group-hover:text-cyan-400 transition-colors">
+                            {card.title}
+                        </h3>
+                        <p className="text-gray-400 font-inter text-sm leading-relaxed">
+                            {card.description}
+                        </p>
+                        
+                        <div className="mt-6 flex items-center gap-2 text-xs font-orbitron font-bold text-cyan-500 tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+                            Launch Scanner <span className="text-lg">→</span>
+                        </div>
+                    </div>
+                </motion.div>
+            ))}
+        </div>
+    );
+};
+
+export default TabCards;

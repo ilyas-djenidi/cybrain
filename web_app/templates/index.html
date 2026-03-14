@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybrain | Advanced Security Intelligence</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.91/build/spline-viewer.js"></script>
+</head>
+<body class="cybrain-theme">
+    <!-- 3D Hero Section -->
+    <div class="hero-container">
+        <spline-viewer url="https://prod.spline.design/a1f156f7-ef01-42d1-bf7b-5be1b7967b0a/scene.splinecode"></spline-viewer>
+        
+        <div class="hero-overlay">
+            <nav class="navbar">
+                <div class="logo">CYBRAIN</div>
+                <div class="nav-links">
+                    <a href="#scanner-suite">Scanner</a>
+                    <a href="#about">Intelligence</a>
+                </div>
+            </nav>
+
+            <div class="hero-content">
+                <h1 class="glitch-text" data-text="CYBRAIN">CYBRAIN</h1>
+                <p class="hero-subtitle">Next-Generation Vulnerability Intelligence & Apache Misconfiguration Detection.</p>
+                <div class="hero-cta">
+                    <a href="#scanner-suite" class="glow-btn">Initialize Scan</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="content-wrapper">
+        <!-- Scanner Suite -->
+        <section id="scanner-suite" class="scanner-section">
+            <div class="section-header">
+                <h2>Security Suite</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="url">URL Analysis</button>
+                    <button class="tab-btn" data-tab="upload">Config Upload</button>
+                    <button class="tab-btn" data-tab="paste">Raw Code</button>
+                </div>
+            </div>
+
+            <div class="scanner-card glass-panel">
+                <!-- URL Scan Tab -->
+                <div class="tab-content active" id="url-tab">
+                    <div class="input-group">
+                        <label>Target URL</label>
+                        <div class="url-input-wrapper">
+                            <input type="url" id="urlInput" placeholder="https://target-site.com">
+                            <button onclick="scanUrl()" class="action-btn">Scan Target</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Tab -->
+                <div class="tab-content" id="upload-tab">
+                    <div class="upload-area" id="drop-zone">
+                        <div class="upload-icon">📁</div>
+                        <p>Deploy Apache configuration files here</p>
+                        <span class="highlight">Browse Files</span>
+                        <input type="file" id="file-input" accept=".conf,.htaccess,.txt">
+                    </div>
+                </div>
+
+                <!-- Paste Tab -->
+                <div class="tab-content" id="paste-tab">
+                    <textarea id="config-input" placeholder="Paste Apache httpd.conf or .htaccess logic here..."></textarea>
+                    <button id="analyze-btn" class="action-btn wide">Analyze Logic</button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="results-section hidden">
+                <div class="results-header">
+                    <h3>Intelligence Report</h3>
+                    <div class="scan-stats" id="scan-stats"></div>
+                </div>
+                <div id="results-list" class="results-grid"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 CYBRAIN Intelligence Platform | Master's Thesis Project</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
