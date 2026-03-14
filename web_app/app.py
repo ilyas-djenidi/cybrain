@@ -107,5 +107,57 @@ def download_report():
     except Exception as e:
         return jsonify({"error": str(e)}), 404
 
+from network_scanner import NetworkScanner
+
+@app.route('/scan_network', methods=['POST'])
+def scan_network():
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({"error": "No data"}), 400
+
+        target = data.get('target', '').strip()
+        if not target:
+            return jsonify({"error": "No target"}), 400
+
+        print(f"[APP] Network scan: {target}")
+        scanner = NetworkScanner(target)
+        results = scanner.scan()
+
+        return jsonify({
+            "findings": results,
+            "total":    len(results),
+            "target":   target,
+            "risk":     scanner._calc_overall_risk(),
+            "recon":    {
+                "ip": scanner.recon_data.get(
+                    "dns", {}
+                ).get("ip"),
+                "os": scanner.recon_data.get(
+                    "os", {}
+                ).get("os"),
+                "open_ports": scanner.recon_data.get(
+                    "ports", {}
+                ).get("total_open", 0),
+            }
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"[APP ERROR] {traceback.format_exc()}")
+        return jsonify({
+            "findings": [{
+                "severity": "HIGH",
+                "line":     "-",
+                "message":  f"Network scan error: {str(e)}",
+                "code":     "Scanner Error",
+                "file":     target if 'target' in locals()
+                            else "unknown"
+            }],
+            "total": 1
+        }), 200
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+

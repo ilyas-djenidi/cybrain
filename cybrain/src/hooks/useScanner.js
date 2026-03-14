@@ -6,6 +6,10 @@ import {
     formatFinding
 } from '../utils/logicProtection';
 
+// Derive base backend URL from existing endpoints
+const BACKEND = API_ENDPOINTS.SCAN_URL?.replace('/scan_url', '') || 'http://127.0.0.1:5000';
+
+
 export const useScanner = () => {
     const [findings, setFindings]   = useState([]);
     const [loading,  setLoading]    = useState(false);
@@ -77,6 +81,24 @@ export const useScanner = () => {
         }
     };
 
+    const scanNetwork = async (target, scanType = 'full') => {
+        if (!target?.trim()) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const { data } = await axios.post(
+                `${BACKEND}/scan_network`,
+                { target: target.trim(), scan_type: scanType },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            handleResults(data);
+        } catch (e) {
+            setError(e.response?.data?.error || e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         findings,
         loading,
@@ -85,5 +107,6 @@ export const useScanner = () => {
         analyzeConfig,
         analyzeFile,
         scanUrl,
+        scanNetwork,
     };
 };

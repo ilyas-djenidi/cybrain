@@ -3,12 +3,13 @@ import { useScanner } from '../hooks/useScanner';
 import ConfigTab from './tabs/ConfigTab';
 import UploadTab from './tabs/UploadTab';
 import UrlTab from './tabs/UrlTab';
+import NetworkTab from './tabs/NetworkTab';
 import ResultsPanel from './ResultsPanel';
 import ScanProgress from './ScanProgress';
 
 const ScannerSuite = ({ activeTabProp }) => {
     const [activeTab, setActiveTab] = useState('config');
-    const { findings, loading, error, total, scanUrl, analyzeConfig, analyzeFile } = useScanner();
+    const { findings, loading, error, total, scanUrl, scanNetwork, analyzeConfig, analyzeFile } = useScanner();
 
     // Sync external tab changes
     React.useEffect(() => {
@@ -18,7 +19,8 @@ const ScannerSuite = ({ activeTabProp }) => {
     const tabs = [
         { id: 'config', label: 'Config Analysis' },
         { id: 'upload', label: 'Upload File' },
-        { id: 'url', label: 'Scan URL' }
+        { id: 'url', label: 'Scan URL' },
+        { id: 'network', label: 'Network Scan' }
     ];
 
     return (
@@ -51,6 +53,7 @@ const ScannerSuite = ({ activeTabProp }) => {
                     {activeTab === 'config' && <ConfigTab onAnalyze={analyzeConfig} loading={loading} />}
                     {activeTab === 'upload' && <UploadTab onUpload={analyzeFile} loading={loading} />}
                     {activeTab === 'url' && <UrlTab onScan={scanUrl} loading={loading} />}
+                    {activeTab === 'network' && <NetworkTab onScan={scanNetwork} loading={loading} />}
                 </div>
 
                 {/* error message */}
