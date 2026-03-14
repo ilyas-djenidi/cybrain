@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from detect_apache_misconf import ApacheMisconfigDetector
 
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:5173'])
+CORS(app)  # Allow all origins — frontend may be hosted on Netlify/Vercel
 
 @app.route('/')
 def index():

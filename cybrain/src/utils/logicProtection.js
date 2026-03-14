@@ -11,11 +11,13 @@
  *   - src/hooks/useScanner.js           API hook
  */
 
-// API endpoints — these match exactly what app.py provides
+// API endpoints — in production points to the Render backend
+const BACKEND = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 export const API_ENDPOINTS = {
-    ANALYZE:         '/analyze',
-    SCAN_URL:        '/scan_url',
-    DOWNLOAD_REPORT: '/download_report',
+    ANALYZE:         `${BACKEND}/analyze`,
+    SCAN_URL:        `${BACKEND}/scan_url`,
+    DOWNLOAD_REPORT: `${BACKEND}/download_report`,
 };
 
 // Severity order — matches url_scanner.py output
