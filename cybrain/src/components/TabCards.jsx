@@ -34,6 +34,13 @@ const cards = [
 ];
 
 const TabCards = ({ onSelect }) => {
+    const routesMap = {
+        config:  '/scan/apache',
+        upload:  '/scan/code',
+        url:     '/scan/web',
+        network: '/scan/network',
+    };
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-0 w-full max-w-6xl">
             {cards.map((card, index) => (
@@ -42,7 +49,9 @@ const TabCards = ({ onSelect }) => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 + 0.5 }}
-                    onClick={() => onSelect(card.id)}
+                    onClick={() => {
+                        onSelect ? onSelect(card.id) : (window.location.href = routesMap[card.id]);
+                    }}
                     className="group relative cursor-pointer h-full"
                 >
                     <div className="absolute -inset-0.5 bg-gradient-to-r opacity-20 group-hover:opacity-100 transition duration-500 blur-xl rounded-2xl"></div>
@@ -50,8 +59,8 @@ const TabCards = ({ onSelect }) => {
                         {/* Decorative Gradient Inner */}
                         <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-10 transition-opacity blur-3xl`}></div>
                         
-                        <div className={`w-14 h-14 bg-gradient-to-br ${card.color} rounded-xl flex items-center justify-center mb-6 shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
-                            <card.icon className="w-8 h-8 text-white" />
+                        <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center mb-6 border border-cyan-500/20 group-hover:scale-110 transition-transform duration-500 shadow-[0_0_15px_rgba(0,245,212,0.1)]">
+                            <card.icon className="w-6 h-6 text-cyan-400" />
                         </div>
                         
                         <h3 className="font-orbitron font-bold text-xl text-white mb-3 group-hover:text-cyan-400 transition-colors">
@@ -61,8 +70,8 @@ const TabCards = ({ onSelect }) => {
                             {card.description}
                         </p>
                         
-                        <div className="mt-6 flex items-center gap-2 text-xs font-orbitron font-bold text-cyan-500 tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
-                            Launch Scanner <span className="text-lg">→</span>
+                        <div className="mt-6 flex items-center gap-2 text-[10px] font-orbitron font-bold text-cyan-500 tracking-[0.2em] uppercase opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+                            INITIALIZE SCAN <span className="text-sm">→</span>
                         </div>
                     </div>
                 </motion.div>

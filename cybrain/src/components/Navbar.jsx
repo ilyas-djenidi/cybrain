@@ -36,7 +36,7 @@ const Navbar = () => {
                                    text-cyan-400 hover:bg-cyan-500 hover:text-black
                                    transition-all duration-300 rounded-sm"
                     >
-                        Launch →
+                        INITIALIZE SCAN →
                     </a>
                 </div>
             </div>

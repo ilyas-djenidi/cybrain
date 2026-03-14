@@ -5,3 +5,4 @@ urllib3==2.1.0
 gunicorn==21.2.0
 # Network scanner dependencies (added for network_scanner module)
 python-nmap==0.7.1
+python-dotenv==1.0.0

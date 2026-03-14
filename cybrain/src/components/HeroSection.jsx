@@ -80,12 +80,11 @@ const HeroSection = () => {
                                        px-8 py-3 bg-cyan-500/10
                                        border border-cyan-500/50 text-cyan-400
                                        font-orbitron font-bold text-xs
-                                       tracking-[0.3em] uppercase rounded-sm
+                                       tracking-[0.15em] uppercase rounded-sm
                                        hover:bg-cyan-500 hover:text-black
-                                       transition-all duration-300"
+                                       transition-all duration-300 shadow-[0_0_20px_rgba(0,245,212,0.1)]"
                         >
-                            INITIALIZE SCAN
-                            <span className="text-base">→</span>
+                            INITIALIZE SCAN →
                         </a>
                     </motion.div>
                 </motion.div>

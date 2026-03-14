@@ -2,6 +2,13 @@ from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS
 import sys
 import os
+import base64
+from dotenv import load_dotenv
+from ai_agent import CybrainAgent
+from code_analyzer import CodeAnalyzer
+
+# Load environment variables
+load_dotenv()
 
 # Add parent directory to path to import detector
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -156,6 +163,153 @@ def scan_network():
             }],
             "total": 1
         }), 200
+
+
+# ── AI CHATBOT ──────────────────────────────────────────────
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        data    = request.get_json(force=True)
+        message = data.get('message', '').strip()
+        context = data.get('context', {})
+        api_key = data.get('api_key', '')
+
+        if not message:
+            return jsonify({"error": "No message"}), 400
+
+        agent    = CybrainAgent(api_key or None)
+        response = agent.chat(message, context)
+
+        return jsonify({
+            "response": response,
+            "model":    "llama-3.3-70b (OpenRouter)"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── CODE FILE ANALYSIS ──────────────────────────────────────
+@app.route('/analyze_code', methods=['POST'])
+def analyze_code():
+    try:
+        api_key  = request.form.get('api_key', '')
+        analyzer = CodeAnalyzer(api_key or None)
+
+        if 'file' in request.files:
+            file     = request.files['file']
+            filename = file.filename
+            content  = file.read().decode(
+                'utf-8', errors='ignore'
+            )
+        elif request.is_json:
+            data     = request.get_json(force=True)
+            content  = data.get('code', '')
+            filename = data.get('filename', 'code.txt')
+            api_key  = data.get('api_key', '')
+            analyzer = CodeAnalyzer(api_key or None)
+        else:
+            return jsonify({"error": "No code provided"}),400
+
+        if not content.strip():
+            return jsonify({"error": "Empty file"}), 400
+
+        result = analyzer.analyze(content, filename)
+
+        return jsonify({
+            "findings":    result["ui_findings"],
+            "total":       len(result["ui_findings"]),
+            "language":    result["language"],
+            "lines":       result["lines_of_code"],
+            "ai_analysis": result["ai_analysis"],
+            "can_fix":     result["fix_supported"],
+            "filename":    filename,
+        })
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+
+# ── FIX CODE ────────────────────────────────────────────────
+@app.route('/fix_code', methods=['POST'])
+def fix_code():
+    try:
+        data     = request.get_json(force=True)
+        content  = data.get('code', '')
+        filename = data.get('filename', 'code.txt')
+        api_key  = data.get('api_key', '')
+        issue    = data.get('specific_issue', None)
+
+        analyzer = CodeAnalyzer(api_key or None)
+        result   = analyzer.fix_code(
+            content, filename
+        )
+
+        return jsonify({
+            "fixed_code":  result.get("fixed_code"),
+            "explanation": result.get("explanation"),
+            "filename":    filename,
+            "can_download":bool(result.get("fixed_code")),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── FIX APACHE CONFIG ───────────────────────────────────────
+@app.route('/fix_config', methods=['POST'])
+def fix_config():
+    try:
+        data     = request.get_json(force=True)
+        config   = data.get('config', '')
+        findings = data.get('findings', [])
+        api_key  = data.get('api_key', '')
+
+        agent  = CybrainAgent(api_key or None)
+        result = agent.fix_apache_config(
+            config, findings
+        )
+
+        return jsonify({
+            "fixed_config": result.get("fixed_config"),
+            "explanation":  result.get("explanation"),
+            "can_download": bool(
+                result.get("fixed_config")
+            ),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── AI FINDINGS ANALYSIS ────────────────────────────────────
+@app.route('/api/analyze_findings', methods=['POST'])
+def analyze_findings():
+    try:
+        data      = request.get_json(force=True)
+        findings  = data.get('findings', [])
+        target    = data.get('target', '')
+        scan_type = data.get('scan_type', 'web')
+        api_key   = data.get('api_key', '')
+
+        agent  = CybrainAgent(api_key or None)
+        result = agent.analyze_findings(
+            findings, target, scan_type
+        )
+
+        return jsonify({"analysis": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── DOWNLOAD FIXED FILE ─────────────────────────────────────
+@app.route('/download_fixed/<filename>')
+def download_fixed(filename):
+    fixed_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "fixed_files", filename
+    )
+    if os.path.exists(fixed_path):
+        return send_file(fixed_path, as_attachment=True)
+    return jsonify({"error": "File not found"}), 404
 
 
 if __name__ == '__main__':
