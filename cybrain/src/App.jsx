@@ -11,6 +11,8 @@ import CodeScanPage from './pages/CodeScanPage';
 import NetworkScanPage from './pages/NetworkScanPage';
 import ReportPage from './pages/ReportPage';
 import ChatBot from './components/ChatBot';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
 function HomePage() {
     const handleCardSelect = (tabId) => {
@@ -25,6 +27,14 @@ function HomePage() {
             window.location.href = routesMap[tabId];
         }
     };
+
+    React.useEffect(() => {
+        // Force scroll to top on load and prevent any auto-scroll
+        if ('scrollRestoration' in window.history) {
+            window.history.scrollRestoration = 'manual';
+        }
+        window.scrollTo(0, 0);
+    }, []);
 
     return (
         <div className="min-h-screen bg-black">
@@ -97,6 +107,28 @@ function HomePage() {
                     </div>
                 </section>
 
+                {/* 4. READY FOR DEPLOYMENT (Moved here) */}
+                <section className="py-24 px-6">
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        className="max-w-7xl mx-auto flex flex-col items-center justify-center p-12 rounded-3xl border border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent text-center"
+                    >
+                        <div className="h-px w-24 bg-cyan-500/30 mb-8" />
+                        <h3 className="font-orbitron text-2xl text-white mb-4 tracking-[0.2em]">READY FOR DEPLOYMENT</h3>
+                        <p className="text-gray-500 font-inter text-sm max-w-lg mb-8 tracking-wide">
+                            Experience the next generation of security auditing. Deploy Cybrain 
+                            to your infrastructure and gain immediate visibility.
+                        </p>
+                        <a 
+                            href="#scanner" 
+                            className="px-10 py-4 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 font-orbitron text-xs tracking-[0.3em] uppercase hover:bg-cyan-500 hover:text-black transition-all duration-300 rounded-sm flex items-center gap-3"
+                        >
+                            INITIALIZE SCAN →
+                        </a>
+                    </motion.div>
+                </section>
+
                 {/* FOOTER */}
                 <footer className="border-t border-white/5 py-12 px-6">
                     <div className="max-w-7xl mx-auto flex flex-col
@@ -108,7 +140,7 @@ function HomePage() {
                         </p>
                         <p className="font-orbitron text-[10px] text-gray-700
                                       tracking-[0.2em] uppercase">
-                            PFE Master 2 — Information Security
+                            Enterprise Security Intelligence Suite
                         </p>
                     </div>
                 </footer>
@@ -117,6 +149,7 @@ function HomePage() {
     );
 }
 
+
 function App() {
     return (
         <BrowserRouter>
@@ -124,6 +157,8 @@ function App() {
                 <Navbar />
                 <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
                     <Route path="/scan/web" element={<WebScanPage />} />
                     <Route path="/scan/apache" element={<ApacheScanPage />} />
                     <Route path="/scan/code" element={<CodeScanPage />} />

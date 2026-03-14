@@ -112,26 +112,6 @@ const AboutSection = () => {
                     ))}
                 </div>
 
-                {/* Bottom CTA or Badge */}
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    className="mt-24 flex flex-col items-center justify-center p-12 rounded-3xl border border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent text-center"
-                >
-                    <div className="h-px w-24 bg-cyan-500/30 mb-8" />
-                    <h3 className="font-orbitron text-2xl text-white mb-4 tracking-[0.2em]">READY FOR DEPLOYMENT</h3>
-                    <p className="text-gray-500 font-inter text-sm max-w-lg mb-8 tracking-wide">
-                        Experience the next generation of security auditing. Deploy Cybrain 
-                        to your infrastructure and gain immediate visibility.
-                    </p>
-                    <a 
-                        href="#scanner" 
-                        className="px-10 py-4 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 font-orbitron text-xs tracking-[0.3em] uppercase hover:bg-cyan-500 hover:text-black transition-all duration-300 rounded-sm flex items-center gap-3"
-                    >
-                        INITIALIZE SCAN
-                        <span>→</span>
-                    </a>
-                </motion.div>
             </div>
         </section>
     );

@@ -39,10 +39,9 @@ const ChatBot = ({
     const bottomRef = useRef();
     const inputRef  = useRef();
 
+    // Zero automatic scrolling to respect user preference
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({
-            behavior: 'smooth'
-        });
+        // bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
     const sendMessage = async (text) => {

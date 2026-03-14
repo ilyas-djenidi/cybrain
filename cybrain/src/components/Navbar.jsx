@@ -28,15 +28,24 @@ const Navbar = () => {
                 </a>
 
                 {/* NAV LINKS */}
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-6">
                     <a
                         href="#scanner"
-                        className="font-orbitron text-xs font-bold tracking-[0.15em]
-                                   uppercase px-5 py-2 border border-cyan-500/50
-                                   text-cyan-400 hover:bg-cyan-500 hover:text-black
+                        className="font-orbitron text-[10px] font-bold tracking-[0.2em]
+                                   uppercase px-5 py-2 border border-cyan-500/30
+                                   text-cyan-400/80 hover:bg-cyan-500 hover:text-black
                                    transition-all duration-300 rounded-sm"
                     >
-                        INITIALIZE SCAN →
+                        SCAN
+                    </a>
+                    <a
+                        href="/login"
+                        className="font-orbitron text-[10px] font-bold tracking-[0.2em]
+                                   uppercase border-b border-white/10 hover:border-cyan-500
+                                   text-white/60 hover:text-cyan-400
+                                   transition-all duration-300"
+                    >
+                        LOGIN
                     </a>
                 </div>
             </div>
