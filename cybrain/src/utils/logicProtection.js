@@ -30,25 +30,25 @@ export const SEVERITY_ORDER = {
 // Severity colors — used in ResultsPanel and SeverityBadge
 export const SEVERITY_STYLES = {
     CRITICAL: {
-        bg:     'rgba(239, 68, 68, 0.07)',
+        bg:     '#000000',
         border: '#ef4444',
         text:   '#ef4444',
         badge:  'bg-red-500/20 text-red-400 border-red-500/40',
     },
     HIGH: {
-        bg:     'rgba(249, 115, 22, 0.07)',
+        bg:     '#000000',
         border: '#f97316',
         text:   '#f97316',
         badge:  'bg-orange-500/20 text-orange-400 border-orange-500/40',
     },
     MEDIUM: {
-        bg:     'rgba(234, 179, 8, 0.07)',
+        bg:     '#000000',
         border: '#eab308',
         text:   '#eab308',
         badge:  'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
     },
     LOW: {
-        bg:     'rgba(34, 197, 94, 0.07)',
+        bg:     '#000000',
         border: '#22c55e',
         text:   '#22c55e',
         badge:  'bg-green-500/20 text-green-400 border-green-500/40',
