@@ -57,3 +57,32 @@
 2026-03-15 18:43:10,755 INFO: 127.0.0.1 - - [15/Mar/2026 18:43:10] "POST /scan_network HTTP/1.1" 200 -
 2026-03-15 18:45:04,990 INFO: 127.0.0.1 - - [15/Mar/2026 18:45:04] "POST /scan_network HTTP/1.1" 200 -
 2026-03-15 19:40:05,620 INFO: 127.0.0.1 - - [15/Mar/2026 19:40:05] "POST /scan_network HTTP/1.1" 200 -
+2026-03-15 19:40:18,073 INFO: Backend started
+2026-03-15 19:40:25,257 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 19:40:25,257 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 19:42:02,471 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,483 DEBUG: http://192.168.1.1:80 "GET /phpmyadmin HTTP/1.1" 400 None
+2026-03-15 19:42:02,489 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,499 DEBUG: http://192.168.1.1:80 "GET /phpMyAdmin HTTP/1.1" 400 None
+2026-03-15 19:42:02,504 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,514 DEBUG: http://192.168.1.1:80 "GET /adminer HTTP/1.1" 400 None
+2026-03-15 19:42:02,517 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,528 DEBUG: http://192.168.1.1:80 "GET /manager/html HTTP/1.1" 400 None
+2026-03-15 19:42:02,533 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,546 DEBUG: http://192.168.1.1:80 "GET /wp-admin HTTP/1.1" 400 None
+2026-03-15 19:42:02,546 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,567 DEBUG: http://192.168.1.1:80 "GET /jenkins HTTP/1.1" 400 None
+2026-03-15 19:42:02,573 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,584 DEBUG: http://192.168.1.1:80 "GET /grafana HTTP/1.1" 400 None
+2026-03-15 19:42:02,584 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,602 DEBUG: http://192.168.1.1:80 "GET /kibana HTTP/1.1" 400 None
+2026-03-15 19:42:02,604 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,615 DEBUG: http://192.168.1.1:80 "GET /sonar HTTP/1.1" 400 None
+2026-03-15 19:42:02,619 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,628 DEBUG: http://192.168.1.1:80 "GET /nexus HTTP/1.1" 400 None
+2026-03-15 19:42:02,633 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
+2026-03-15 19:42:02,643 DEBUG: http://192.168.1.1:80 "GET /console HTTP/1.1" 400 None
+2026-03-15 19:42:02,662 INFO: 127.0.0.1 - - [15/Mar/2026 19:42:02] "POST /scan_network HTTP/1.1" 200 -
