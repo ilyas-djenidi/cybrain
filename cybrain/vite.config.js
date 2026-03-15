@@ -1,21 +1,70 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/analyze':              'http://127.0.0.1:5000',
-      '/scan_url':             'http://127.0.0.1:5000',
-      '/scan_network':         'http://127.0.0.1:5000',
-      '/analyze_code':         'http://127.0.0.1:5000',
-      '/fix_code':             'http://127.0.0.1:5000',
-      '/fix_config':           'http://127.0.0.1:5000',
-      '/detect_apache_misconf':'http://127.0.0.1:5000',
-      '/api':                  'http://127.0.0.1:5000',
-      '/download_report':      'http://127.0.0.1:5000',
-      '/download_fixed':       'http://127.0.0.1:5000',
+      '/analyze': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      480000,
+        proxyTimeout: 480000,
+      },
+      '/scan_url': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      480000,
+        proxyTimeout: 480000,
+      },
+      '/scan_network': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      480000,
+        proxyTimeout: 480000,
+      },
+      '/analyze_code': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      480000,
+        proxyTimeout: 480000,
+      },
+      '/fix_code': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      480000,
+        proxyTimeout: 480000,
+      },
+      '/fix_config': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      480000,
+        proxyTimeout: 480000,
+      },
+      '/api': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      480000,
+        proxyTimeout: 480000,
+      },
+      '/download_report': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      60000,
+        proxyTimeout: 60000,
+      },
+      '/download_fixed': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      60000,
+        proxyTimeout: 60000,
+      },
+      '/health': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      10000,
+        proxyTimeout: 10000,
+      },
     }
   }
 })

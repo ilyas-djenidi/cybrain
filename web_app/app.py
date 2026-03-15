@@ -11,6 +11,26 @@ import tempfile
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from dotenv import load_dotenv
+import time
+import hashlib
+
+# Simple cache to avoid duplicate AI calls
+_ai_cache = {}
+_ai_cache_ttl = {}
+CACHE_TTL = 300  # 5 minutes
+
+def _get_cache(key):
+    """Get cached AI response if still valid."""
+    if key in _ai_cache:
+        if time.time() - _ai_cache_ttl[key] < CACHE_TTL:
+            print(f"[AI CACHE] Hit for {key[:20]}")
+            return _ai_cache[key]
+    return None
+
+def _set_cache(key, value):
+    """Cache an AI response."""
+    _ai_cache[key]     = value
+    _ai_cache_ttl[key] = time.time()
 
 # Load .env FIRST before any other imports
 load_dotenv()
@@ -104,62 +124,87 @@ def analyze():
 # ── WEB VULNERABILITY SCAN ────────────────────────────────────
 @app.route('/scan_url', methods=['POST'])
 def scan_url():
+    data = None
+    url_safe = ''
     try:
         data = request.get_json(force=True)
         if not data:
-            return jsonify({"error": "No JSON received"}), 400
+            return jsonify({
+                "error": "No JSON received"
+            }), 400
 
         url = data.get('url', '').strip()
         if not url:
-            return jsonify({"error": "No URL provided"}), 400
+            return jsonify({
+                "error": "No URL provided"
+            }), 400
 
         # Clean URL
-        if not url.startswith(('http://', 'https://')):
+        if not url.startswith(('http://','https://')):
             url = 'http://' + url
         url = url.split('#')[0].rstrip('/')
+        url_safe = url
 
-        print(f"[SCAN_URL] Scanning: {url}")
+        print(f"\n[SCAN_URL] Starting: {url}")
+        print("[SCAN_URL] This may take 3-8 minutes...")
 
         from url_scanner import UrlScanner
         scanner = UrlScanner(url)
         results = scanner.scan()
 
-        # Ensure results is always a list
         if not isinstance(results, list):
             results = []
 
         risk = scanner._calc_overall_risk()
 
+        print(
+            f"[SCAN_URL] Done: "
+            f"{len(results)} findings, "
+            f"risk={risk}"
+        )
+
         return jsonify({
             "findings": results,
-            "results":  results,  # backwards compat
+            "results":  results,
             "total":    len(results),
             "url":      url,
             "risk":     risk,
         })
 
     except Exception as e:
-        print(f"[SCAN_URL ERROR]\n{traceback.format_exc()}")
-        url_safe = ''
-        try:
-            url_safe = request.get_json(force=True).get('url','')
-        except Exception:
-            pass
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[SCAN_URL ERROR]\n{tb}")
+
+        # Return partial results if available
+        # rather than a 500 error
+        error_finding = [{
+            "severity": "HIGH",
+            "line":     "-",
+            "message":  (
+                f"Scanner error: {str(e)}<br><br>"
+                "<strong>Partial results may be "
+                "available above.</strong><br><br>"
+                "<strong>Common causes:</strong><br>"
+                "• Target blocked the scan<br>"
+                "• Network timeout<br>"
+                "• Target returned unexpected response"
+                "<br><br>"
+                "<strong>Try:</strong><br>"
+                "• http://testphp.vulnweb.com<br>"
+                "• https://demo.testfire.net"
+            ),
+            "code": "Scan Interrupted",
+            "file": url_safe,
+        }]
+
         return jsonify({
-            "findings": [{
-                "severity": "HIGH",
-                "line":     "-",
-                "message":  (
-                    f"Scanner error: {str(e)}<br><br>"
-                    "<strong>Recommendation:</strong><br>"
-                    "Check Flask console for details."
-                ),
-                "code": "Scanner Error",
-                "file": url_safe,
-            }],
-            "total": 1,
-            "risk":  "HIGH",
-        }), 200
+            "findings": error_finding,
+            "results":  error_finding,
+            "total":    1,
+            "risk":     "HIGH",
+            "url":      url_safe,
+        }), 200  # Return 200 not 500
 
 
 # ── NETWORK SCAN ──────────────────────────────────────────────
@@ -202,10 +247,12 @@ def scan_network():
         })
 
     except Exception as e:
-        print(f"[SCAN_NETWORK ERROR]\n{traceback.format_exc()}")
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[SCAN_NETWORK ERROR]\n{tb}")
+        
         target_info = "Unknown"
         try:
-            # Re-read target if data not defined
             target_info = request.get_json(force=True).get('target', 'Unknown')
         except:
             pass
@@ -214,11 +261,22 @@ def scan_network():
             "findings": [{
                 "severity": "HIGH",
                 "line":     "-",
-                "message":  f"Network scan error: {str(e)}",
+                "message":  (
+                    f"Network scan error: {str(e)}<br><br>"
+                    "<strong>Possible causes:</strong><br>"
+                    "• Target is unreachable<br>"
+                    "• Internal network blocking scans<br>"
+                    "• Invalid IP/Hostname provided"
+                    "<br><br>"
+                    "<strong>Recommendation:</strong><br>"
+                    "Check if the target is online and reachable from this server."
+                ),
                 "code":     "Scanner Error",
                 "file":     target_info,
             }],
             "total": 1,
+            "target": target_info,
+            "risk": "HIGH"
         }), 200
 
 
@@ -329,12 +387,28 @@ def chat():
         if not message:
             return jsonify({"error": "No message"}), 400
 
+        # Cache key from message + context
+        cache_key = hashlib.md5(
+            (message + str(context)).encode()
+        ).hexdigest()
+
+        cached = _get_cache(cache_key)
+        if cached:
+            return jsonify({
+                "response": cached,
+                "model":    "Gemini 2.0 Flash (cached)"
+            })
+
         agent    = CybrainAgent()
         response = agent.chat(message, context)
 
+        # Cache successful responses
+        if response and not response.startswith("⚠️"):
+            _set_cache(cache_key, response)
+
         return jsonify({
             "response": response,
-            "model":    "Gemini 1.5 Flash"
+            "model":    "Gemini 2.0 Flash"
         })
 
     except Exception as e:
@@ -445,5 +519,6 @@ if __name__ == '__main__':
         debug=True,
         host='0.0.0.0',
         port=5000,
-        use_reloader=True
+        use_reloader=True,
+        threaded=True        # Handle multiple requests
     )

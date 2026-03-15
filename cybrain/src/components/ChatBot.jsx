@@ -22,7 +22,7 @@ const ChatBot = ({
         role:    'assistant',
         content: (
             '👋 Hello! I\'m **Cybrain AI** — your ' +
-            'cybersecurity expert powered by Gemini.\n\n' +
+            'personal cybersecurity expert.\n\n' +
             'I can help you:\n' +
             '• Understand vulnerabilities found\n' +
             '• Explain attack techniques\n' +
@@ -67,15 +67,32 @@ const ChatBot = ({
                 }
             ]);
         } catch(e) {
+            console.error('[CHAT ERROR]', e);
+            let errMsg = '⚠️ Connection error. The security engine is currently overloaded. Please try again in a moment.';
+            
+            // If we got a response from backend, it might contain the quota message
+            if (
+                e.response?.status === 429 ||
+                (e.response?.data?.response || '')
+                    .includes('quota')
+            ) {
+                errMsg = (
+                    '⚠️ **Rate limit reached** ' +
+                    '(15 requests/minute free tier).\n\n' +
+                    'Please wait **60 seconds** and try again.\n\n' +
+                    '💡 Tip: Scan results are complete without AI. ' +
+                    'AI analysis is optional — it only explains ' +
+                    'findings, it does not do the scanning.'
+                );
+            } else if (e.response?.data?.response) {
+                errMsg = e.response.data.response;
+            }
+
             setMessages(prev => [
                 ...prev,
                 {
                     role:    'assistant',
-                    content: (
-                        '⚠️ Connection error. ' +
-                        'The security engine is currently overloaded. ' +
-                        'Please try again in a moment.'
-                    ),
+                    content: errMsg,
                 }
             ]);
         } finally {
@@ -102,7 +119,7 @@ const ChatBot = ({
                 </div>
                 <div>
                     <p className="font-orbitron text-cyan-400 text-[10px] font-bold tracking-wider">CYBRAIN AI</p>
-                    <p className="text-[9px] text-gray-500 font-inter">Gemini 1.5 Flash • AI Security Expert</p>
+                    <p className="text-[9px] text-gray-500 font-inter">Gemini 2.0 Flash • AI Security Expert</p>
                 </div>
             </div>
             <div className="flex gap-2">

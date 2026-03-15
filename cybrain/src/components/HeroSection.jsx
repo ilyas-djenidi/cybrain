@@ -77,7 +77,8 @@ const HeroSection = () => {
                         <span className="text-cyan-400 font-medium italic">
                             Cybrain
                         </span>{' '}
-                        intelligence and Gemini 1.5 expert analysis.
+                        intelligence and Gemini 2.0 Flash
+expert analysis.
                     </motion.p>
 
                     {/* CTA */}

@@ -132,7 +132,8 @@ const CodeScanPage = () => {
                     <p className="text-gray-500 text-xs md:text-sm
                                   font-inter max-w-2xl leading-relaxed">
                         Upload any source file for deep static analysis. 
-                        Gemini 1.5 detect vulnerabilities and generates
+                        Gemini 2.0 Flash
+detect vulnerabilities and generates
                         hardened versions of your code.
                     </p>
                 </div>

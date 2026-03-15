@@ -38,7 +38,7 @@ const WebScanPage = () => {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    timeout: 120000  // 2 minute timeout
+                    timeout: 480000  // 8 minutes
                 }
             );
             // Handle both response key formats
@@ -130,7 +130,7 @@ const WebScanPage = () => {
                     <p className="text-gray-500 font-inter
                                   text-xs md:text-sm max-w-2xl leading-relaxed">
                         Full OWASP Top 10 assessment with
-                        AI-powered analysis and remediation powered by Gemini 1.5.
+                        AI-powered analysis and remediation powered by Gemini 2.0.
                     </p>
                 </motion.div>
 
@@ -172,37 +172,110 @@ const WebScanPage = () => {
                                        transition-all
                                        disabled:opacity-50"
                         >
-                            {loading ? '⟳ Scanning...'
-                                     : '▶ Start Scan'}
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-black rounded-full animate-bounce" />
+                                    <span>Scanning...</span>
+                                </div>
+                            ) : '▶ Start Scan'}
                         </motion.button>
                     </div>
 
                     {/* Quick targets */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-gray-600
-                                         text-[10px] font-orbitron
-                                         tracking-widest
-                                         uppercase">
-                            Safe targets:
-                        </span>
-                        {SAFE_TARGETS.map(t => (
-                            <button
-                                key={t}
-                                onClick={() => setUrl(t)}
-                                className="text-[10px] text-cyan-500/60
-                                           hover:text-cyan-400
-                                           font-mono transition-all
-                                           bg-white/[0.03]
-                                           border border-white/5
-                                           px-3 py-1.5 rounded-lg
-                                           hover:bg-cyan-500/10"
-                            >
-                                {t.replace('https://','')
-                                  .replace('http://','')}
-                            </button>
-                        ))}
-                    </div>
                 </div>
+
+                {/* Loading State */}
+                {loading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="scanner-glass rounded-3xl
+                                   p-8 text-center mb-8 border border-cyan-500/20"
+                    >
+                        {/* Animated scan line */}
+                        <div className="relative h-1 bg-gray-800
+                                        rounded-full overflow-hidden
+                                        mb-6 max-w-sm mx-auto">
+                            <motion.div
+                                className="absolute inset-y-0 left-0
+                                           w-1/3 bg-gradient-to-r
+                                           from-transparent
+                                           via-cyan-400 to-transparent"
+                                animate={{ x: ['-100%', '400%'] }}
+                                transition={{
+                                    duration:  2,
+                                    repeat:    Infinity,
+                                    ease:      'linear',
+                                }}
+                            />
+                        </div>
+
+                        {/* Bouncing dots */}
+                        <div className="flex items-center
+                                        justify-center gap-2 mb-4">
+                            {[0,1,2,3,4].map(i => (
+                                <div
+                                    key={i}
+                                    className="w-2 h-2 bg-cyan-400
+                                               rounded-full
+                                               animate-bounce"
+                                    style={{
+                                        animationDelay: `${i * 0.15}s`
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        <p className="font-orbitron text-cyan-400
+                                      text-sm font-bold
+                                      tracking-[0.2em] uppercase mb-2">
+                            OWASP 2025 Scan Running
+                        </p>
+                        <p className="text-gray-500 text-xs
+                                      font-inter mb-4">
+                            Testing 100+ vulnerability payloads
+                            across 10 OWASP categories...
+                        </p>
+
+                        {/* What's being tested */}
+                        <div className="grid grid-cols-2 gap-2
+                                        max-w-md mx-auto text-left">
+                            {[
+                                'A01 Broken Access Control',
+                                'A02 Misconfiguration',
+                                'A03 Supply Chain',
+                                'A04 Cryptographic Failures',
+                                'A05 Injection (SQLi/XSS)',
+                                'A06 Insecure Design',
+                                'A07 Auth Failures',
+                                'A08 Integrity Failures',
+                                'A09 Logging Failures',
+                                'A10 Exception Handling',
+                            ].map((check, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center
+                                               gap-1.5"
+                                >
+                                    <div className="w-1 h-1
+                                                   bg-cyan-500/50
+                                                   rounded-full
+                                                   flex-shrink-0"/>
+                                    <span className="text-gray-600
+                                                     text-[10px]
+                                                     font-inter">
+                                        {check}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <p className="text-gray-700 text-[10px]
+                                      font-inter mt-4">
+                            Estimated time: 3-8 minutes
+                        </p>
+                    </motion.div>
+                )}
 
                 {/* Results */}
                 {findings.length > 0 && (
@@ -263,7 +336,7 @@ const WebScanPage = () => {
                                     <p className="text-gray-500
                                                   text-xs
                                                   font-inter">
-                                        Powered by Gemini 1.5 Flash • Contextual remediation & advice
+                                        Powered by Gemini 2.0 Flash • Contextual remediation & advice
                                     </p>
                                 </div>
                                 <button

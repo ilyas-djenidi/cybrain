@@ -17,12 +17,7 @@ const NetworkScanPage = () => {
     const [aiAnalysis, setAiAnalysis] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
 
-    // Common safe targets for quick testing
-    const quickTargets = [
-        { name: 'Nmap ScanMe', host: 'scanme.nmap.org' },
-        { name: 'Google DNS', host: '8.8.8.8' },
-        { name: 'Localhost', host: '127.0.0.1' }
-    ];
+    // Common safe targets FORMERLY here — now removed as requested
 
     const scanModes = [
         { 
@@ -68,7 +63,7 @@ const NetworkScanPage = () => {
                 { target: discoveryTarget, mode: scanMode },
                 { 
                     headers: { 'Content-Type': 'application/json' },
-                    timeout: 180000 
+                    timeout: 480000 
                 }
             );
             
@@ -108,6 +103,25 @@ const NetworkScanPage = () => {
         }
     };
 
+    const cleanMessage = (msg) => {
+        if (!msg) return '';
+        return msg
+            .replace(/\n\n/g, '<br><br>')
+            .replace(/\n/g, '<br>')
+            .replace(
+                /`([^`]+)`/g,
+                '<code style="background:rgba(0,245,212,0.08);' +
+                'border:1px solid rgba(0,245,212,0.2);' +
+                'padding:2px 8px;border-radius:4px;' +
+                'font-family:monospace;font-size:11px;' +
+                'color:#00f5d4;white-space:nowrap">$1</code>'
+            )
+            .replace(
+                /\*\*(.*?)\*\*/g,
+                '<strong style="color:#e5e7eb">$1</strong>'
+            );
+    };
+
     const getSeverityCount = (sev) => {
         if (!results?.findings) return 0;
         return results.findings.filter(f => f.severity === sev).length;
@@ -136,17 +150,7 @@ const NetworkScanPage = () => {
                                 Powered by Cybrain static analysis & Gemini AI intelligence.
                             </p>
                         </div>
-                        <div className="flex gap-3">
-                            {quickTargets.map(t => (
-                                <button 
-                                    key={t.host}
-                                    onClick={() => setTarget(t.host)}
-                                    className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-orbitron text-gray-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-all"
-                                >
-                                    {t.name}
-                                </button>
-                            ))}
-                        </div>
+                        {/* Quick Targets REMOVED as requested */}
                     </div>
                 </motion.div>
 
@@ -166,6 +170,11 @@ const NetworkScanPage = () => {
                                 />
                                 <div className="absolute right-4 top-4 text-cyan-500/30 animate-pulse">📡</div>
                             </div>
+
+                            {/* Hint text only — no buttons */}
+                            <p className="text-gray-700 text-xs font-mono mt-[-20px] mb-8">
+                                e.g. scanme.nmap.org · 192.168.1.x · testphp.vulnweb.com
+                            </p>
 
                             <label className="font-orbitron text-[10px] text-gray-500 tracking-[0.2em] uppercase mb-4 block">Operational Mode</label>
                             <div className="space-y-3">
@@ -308,7 +317,17 @@ const NetworkScanPage = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: idx * 0.05 }}
-                                                className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-all group"
+                                                className={`border rounded-2xl p-6 hover:border-white/10 transition-all group ${
+                                                    finding.severity === 'CRITICAL'
+                                                        ? 'border-red-500 bg-red-500/5'
+                                                        : finding.severity === 'HIGH'
+                                                        ? 'border-orange-500 bg-orange-500/5'
+                                                        : finding.severity === 'MEDIUM'
+                                                        ? 'border-yellow-500 bg-yellow-500/5'
+                                                        : finding.severity === 'LOW'
+                                                        ? 'border-green-500 bg-green-500/5'
+                                                        : 'border-cyan-500/40 bg-cyan-500/5'  // INFO
+                                                }`}
                                             >
                                                 <div className="flex items-start justify-between gap-4 mb-4">
                                                     <div className="flex items-center gap-4">
@@ -321,7 +340,9 @@ const NetworkScanPage = () => {
                                                 </div>
                                                 <div 
                                                     className="text-[11px] text-gray-500 font-inter leading-relaxed findings-content"
-                                                    dangerouslySetInnerHTML={{ __html: finding.message }}
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: cleanMessage(finding.message)
+                                                    }}
                                                 />
                                             </motion.div>
                                         ))}
@@ -339,21 +360,97 @@ const NetworkScanPage = () => {
                                     </div>
                                 </motion.div>
                             ) : loading ? (
-                                <motion.div 
-                                    initial={{ opacity:0 }} animate={{ opacity:1 }}
-                                    className="h-[600px] flex flex-col items-center justify-center text-center p-20 border-2 border-dashed border-white/5 rounded-3xl"
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="scanner-glass rounded-3xl
+                                               p-12 text-center mb-8 border border-cyan-500/20"
                                 >
-                                    <div className="relative mb-10">
-                                        <div className="w-24 h-24 border-2 border-cyan-500/20 rounded-full animate-ping"></div>
-                                        <div className="absolute inset-0 flex items-center justify-center text-4xl">🛰️</div>
+                                    {/* Animated scan line */}
+                                    <div className="relative h-1 bg-gray-800
+                                                    rounded-full overflow-hidden
+                                                    mb-8 max-w-sm mx-auto">
+                                        <motion.div
+                                            className="absolute inset-y-0 left-0
+                                                       w-1/3 bg-gradient-to-r
+                                                       from-transparent
+                                                       via-cyan-400 to-transparent"
+                                            animate={{ x: ['-100%', '400%'] }}
+                                            transition={{
+                                                duration:  2,
+                                                repeat:    Infinity,
+                                                ease:      'linear',
+                                            }}
+                                        />
                                     </div>
-                                    <h3 className="font-orbitron font-black text-xl tracking-[0.3em] mb-4 animate-pulse">SYNCHRONIZING RECON DATA</h3>
-                                    <p className="text-gray-600 font-inter text-xs max-w-sm">
-                                        Intercepting network packets and mapping target surface. This process usually takes 60-180 seconds.
+
+                                    {/* Bouncing dots */}
+                                    <div className="flex items-center
+                                                    justify-center gap-2 mb-6">
+                                        {[0,1,2,3,4].map(i => (
+                                            <div
+                                                key={i}
+                                                className="w-2.5 h-2.5 bg-cyan-400
+                                                           rounded-full
+                                                           animate-bounce"
+                                                style={{
+                                                    animationDelay: `${i * 0.15}s`
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <h3 className="font-orbitron text-cyan-400
+                                                  text-lg font-black
+                                                  tracking-[0.3em] uppercase mb-4">
+                                        SYNCHRONIZING RECON DATA
+                                    </h3>
+                                    <p className="text-gray-500 text-xs
+                                                  font-inter mb-8 max-w-md mx-auto">
+                                        Intercepting network packets and mapping target surface. 
+                                        Performing deep service enumeration across 75+ critical ports.
                                     </p>
-                                    <div className="mt-10 font-mono text-[10px] text-cyan-500/50 uppercase tracking-widest">
-                                        {`[ INTERCEPTING ] PORT_SCAN :: ATTACK_VECTOR_RECOGNITION`}
+
+                                    {/* What's being tested */}
+                                    <div className="grid grid-cols-2 gap-3
+                                                    max-w-lg mx-auto text-left py-6 border-y border-white/5">
+                                        {[
+                                            'TCP Port Discovery',
+                                            'Banner Grabbing',
+                                            'OS Fingerprinting',
+                                            'SNMP Community Enumeration',
+                                            'Docker API Check',
+                                            'Database Accessibility',
+                                            'Management Interfaces',
+                                            'Message Queue Vulnerabilities',
+                                            'Key-Value Store Exposure',
+                                            'Metasploit Indicator Check',
+                                        ].map((check, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center
+                                                           gap-2"
+                                            >
+                                                <div className="w-1 h-1
+                                                               bg-cyan-500/50
+                                                               rounded-full
+                                                               flex-shrink-0"/>
+                                                <span className="text-gray-600
+                                                                 text-[10px]
+                                                                 font-orbitron uppercase tracking-widest">
+                                                    {check}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
+
+                                    <div className="mt-8 font-mono text-[10px] text-cyan-500/50 uppercase tracking-widest animate-pulse">
+                                        [ INTERCEPTING ] PORT_SCAN :: ATTACK_VECTOR_RECOGNITION
+                                    </div>
+                                    <p className="text-gray-700 text-[10px]
+                                                  font-inter mt-4">
+                                        Estimated time: 2-5 minutes
+                                    </p>
                                 </motion.div>
                             ) : (
                                 <div className="h-[600px] flex flex-col items-center justify-center text-center p-20 border-2 border-dashed border-white/5 rounded-3xl">

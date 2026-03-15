@@ -131,6 +131,7 @@ class NetworkVulnScanner:
         self._check_web_services()
         self._check_nosql_exposure()
         self._check_management_interfaces()
+        self._check_snmp()
 
         print(
             f"[NETWORK VULN] Done. "
@@ -139,102 +140,8 @@ class NetworkVulnScanner:
         return self.findings
 
     # ── DANGEROUS PORTS ──────────────────────────────────────
-    def _check_dangerous_ports(self, port, service,
-                                banner):
+    def _check_dangerous_ports(self, port, service, banner):
         dangerous = {
-            23:   ("CRITICAL",
-                   "Telnet Open — Unencrypted Remote Access",
-                   "Telnet transmits all data including "
-                   "passwords in plaintext. Any attacker "
-                   "on the network can capture credentials.",
-                   "Disable Telnet immediately. Use SSH "
-                   "instead: sudo systemctl disable telnet",
-                   "CWE-319", "9.8"),
-            21:   ("HIGH",
-                   "FTP Open — Unencrypted File Transfer",
-                   "FTP transmits credentials and data in "
-                   "plaintext. Vulnerable to sniffing and "
-                   "MITM attacks.",
-                   "Replace FTP with SFTP or FTPS. "
-                   "If needed, enforce TLS.",
-                   "CWE-319", "7.5"),
-            111:  ("HIGH",
-                   "RPC Port Mapper Exposed",
-                   "Port 111 (RPC) exposed. Attackers can "
-                   "enumerate RPC services and exploit "
-                   "misconfigurations.",
-                   "Block port 111 at the firewall unless "
-                   "explicitly required.",
-                   "CWE-284", "7.5"),
-            135:  ("HIGH",
-                   "Microsoft RPC Exposed",
-                   "MS-RPC on port 135 is exposed. Multiple "
-                   "critical vulnerabilities exist including "
-                   "MS03-026 (Blaster worm).",
-                   "Block port 135 at the firewall. Apply "
-                   "all Windows security patches.",
-                   "CWE-284", "8.1"),
-            139:  ("HIGH",
-                   "NetBIOS Session Service Exposed",
-                   "NetBIOS on 139 allows enumeration of "
-                   "shares, users, and workgroups.",
-                   "Disable NetBIOS over TCP/IP if not "
-                   "needed. Block at firewall.",
-                   "CWE-284", "7.5"),
-            445:  ("CRITICAL",
-                   "SMB Port 445 Exposed (EternalBlue Risk)",
-                   "SMB is exposed. Vulnerable to "
-                   "EternalBlue (MS17-010) — used by "
-                   "WannaCry ransomware. Remote code "
-                   "execution without authentication.",
-                   "Apply MS17-010 patch immediately. "
-                   "Block port 445 at firewall. "
-                   "Disable SMBv1.",
-                   "CVE-2017-0144", "9.8"),
-            1433: ("HIGH",
-                   "MSSQL Exposed to Internet",
-                   "Microsoft SQL Server on 1433 is "
-                   "publicly accessible. Brute force, "
-                   "SQL injection, and xp_cmdshell attacks.",
-                   "Bind SQL Server to localhost only. "
-                   "Use firewall rules. Disable xp_cmdshell.",
-                   "CWE-284", "8.8"),
-            3389: ("HIGH",
-                   "RDP Exposed to Internet",
-                   "Remote Desktop Protocol on 3389. "
-                   "Vulnerable to BlueKeep (CVE-2019-0708), "
-                   "brute force, and credential stuffing.",
-                   "Restrict RDP to VPN only. "
-                   "Enable NLA. Apply BlueKeep patch. "
-                   "Use strong passwords + MFA.",
-                   "CVE-2019-0708", "9.8"),
-            5900: ("HIGH",
-                   "VNC Exposed Without Auth",
-                   "VNC remote desktop on 5900. Often "
-                   "configured with weak or no passwords. "
-                   "Full desktop control possible.",
-                   "Require strong VNC password. "
-                   "Tunnel through SSH. "
-                   "Block from public internet.",
-                   "CWE-521", "9.8"),
-            6379: ("CRITICAL",
-                   "Redis Exposed Without Auth",
-                   "Redis on 6379 accessible without "
-                   "authentication. Full database read/write "
-                   "and potential RCE via config set.",
-                   "Bind Redis to 127.0.0.1. "
-                   "Enable requirepass in redis.conf. "
-                   "Block port 6379 at firewall.",
-                   "CVE-2022-0543", "10.0"),
-            27017:("CRITICAL",
-                   "MongoDB Exposed Without Auth",
-                   "MongoDB on 27017 accessible. Default "
-                   "installs have no authentication. "
-                   "Full database access possible.",
-                   "Enable MongoDB authentication. "
-                   "Bind to 127.0.0.1. "
-                   "Block port 27017 externally.",
-                   "CWE-284", "10.0"),
             9200: ("CRITICAL",
                    "Elasticsearch Exposed Without Auth",
                    "Elasticsearch on 9200. Default has "
@@ -243,6 +150,129 @@ class NetworkVulnScanner:
                    "Bind to localhost. "
                    "Add firewall rules.",
                    "CVE-2014-3120", "10.0"),
+            2375: ("CRITICAL",
+                   "Docker API Exposed (Unauthenticated)",
+                   "Docker daemon API port 2375 is exposed without TLS. "
+                   "Full container management, host filesystem access, "
+                   "and container escape to host RCE possible.",
+                   "Disable plain HTTP Docker API:\n"
+                   "Remove -H tcp://0.0.0.0:2375 from dockerd\n"
+                   "Use TLS-secured socket (port 2376) only.",
+                   "CVE-2019-5736", "10.0"),
+            2376: ("HIGH",
+                   "Docker TLS API Exposed",
+                   "Docker TLS API on 2376 exposed. If TLS certs "
+                   "are misconfigured, unauthorized access possible.",
+                   "Verify TLS certificates are properly configured.\n"
+                   "Restrict access to trusted IPs only.",
+                   "CWE-284", "8.1"),
+            11211:("CRITICAL",
+                   "Memcached Exposed (Amplification Attack Risk)",
+                   "Memcached on 11211 accessible without auth. "
+                   "Used in DDoS amplification attacks (51,000x). "
+                   "All cached data readable and writable.",
+                   "Bind to 127.0.0.1 only.\n"
+                   "Block UDP port 11211 at firewall.\n"
+                   "Enable SASL authentication.",
+                   "CVE-2018-1000115", "10.0"),
+            5984: ("CRITICAL",
+                   "CouchDB Exposed Without Auth",
+                   "CouchDB admin interface on 5984 accessible. "
+                   "Default install has no authentication. "
+                   "All databases readable, RCE via _node API.",
+                   "Enable CouchDB authentication.\n"
+                   "Bind to localhost only.\n"
+                   "Block port 5984 externally.",
+                   "CVE-2017-12635", "9.8"),
+            50070:("HIGH",
+                   "Hadoop NameNode Web UI Exposed",
+                   "Hadoop NameNode on 50070 accessible. "
+                   "Exposes HDFS file system, cluster info, "
+                   "and potentially allows file read/write.",
+                   "Enable Kerberos authentication.\n"
+                   "Restrict access with firewall rules.",
+                   "CWE-284", "8.1"),
+            10000:("HIGH",
+                   "Webmin Admin Panel Exposed",
+                   "Webmin on 10000 is accessible. "
+                   "Known critical vulnerabilities exist. "
+                   "Full server administration possible.",
+                   "Update Webmin immediately.\n"
+                   "Restrict to trusted IPs only.\n"
+                   "Disable if not needed.",
+                   "CVE-2019-15107", "9.8"),
+            9092: ("HIGH",
+                   "Apache Kafka Exposed",
+                   "Kafka broker on 9092 without authentication. "
+                   "All topics readable/writable. "
+                   "Can inject malicious messages into pipelines.",
+                   "Enable Kafka SASL/SSL authentication.\n"
+                   "Bind to internal network only.\n"
+                   "Use ACLs for topic access control.",
+                   "CWE-287", "8.1"),
+            15672:("HIGH",
+                   "RabbitMQ Management UI Exposed",
+                   "RabbitMQ management interface on 15672. "
+                   "Default credentials guest:guest often active. "
+                   "Full message queue access and admin control.",
+                   "Change default credentials immediately.\n"
+                   "Restrict management UI to localhost.\n"
+                   "Enable TLS for all connections.",
+                   "CWE-521", "8.8"),
+            4848: ("HIGH",
+                   "GlassFish Admin Console Exposed",
+                   "GlassFish admin console on 4848 accessible. "
+                   "Known RCE vulnerabilities. "
+                   "Full application server control.",
+                   "Update GlassFish to latest version.\n"
+                   "Restrict admin console to localhost.\n"
+                   "Change default admin password.",
+                   "CVE-2011-2260", "9.8"),
+            8888: ("MEDIUM",
+                   "Jupyter Notebook Exposed",
+                   "Jupyter Notebook on 8888 accessible. "
+                   "If no token/password configured, "
+                   "arbitrary Python code execution possible.",
+                   "Set Jupyter password: jupyter notebook password\n"
+                   "Bind to localhost: c.NotebookApp.ip='127.0.0.1'\n"
+                   "Never expose Jupyter to internet.",
+                   "CWE-284", "9.0"),
+            2181: ("HIGH",
+                   "Zookeeper Exposed Without Auth",
+                   "Zookeeper on 2181 accessible. "
+                   "Stores Kafka/Hadoop cluster config. "
+                   "Data readable, cluster disruption possible.",
+                   "Enable Zookeeper authentication (SASL).\n"
+                   "Restrict access with firewall rules.\n"
+                   "Bind to internal network only.",
+                   "CWE-287", "7.5"),
+            161:  ("MEDIUM",
+                   "SNMP Service Exposed",
+                   "SNMP on port 161 accessible. "
+                   "Community string 'public' often default. "
+                   "Network device info and config readable.",
+                   "Change SNMP community strings.\n"
+                   "Use SNMPv3 with authentication.\n"
+                   "Restrict SNMP access by IP.",
+                   "CWE-287", "7.5"),
+            873:  ("HIGH",
+                   "Rsync Exposed Without Auth",
+                   "Rsync on 873 accessible. "
+                   "May allow anonymous file read/write access "
+                   "to synced directories.",
+                   "Require rsync authentication.\n"
+                   "Restrict access with hosts allow.\n"
+                   "Disable if not needed.",
+                   "CWE-284", "8.1"),
+            4444: ("CRITICAL",
+                   "Metasploit Default Port Open",
+                   "Port 4444 open — default Metasploit "
+                   "meterpreter handler port. "
+                   "May indicate active compromise.",
+                   "Investigate immediately — possible breach.\n"
+                   "Check for unauthorized processes.\n"
+                   "Run forensic analysis.",
+                   "CWE-200", "10.0"),
         }
 
         if port in dangerous:
@@ -744,3 +774,77 @@ class NetworkVulnScanner:
                         break
                 except Exception:
                     pass
+
+    def _check_snmp(self):
+        """Check SNMP for default community strings."""
+        open_ports = self.recon.get(
+            "ports", {}
+        ).get("open", [])
+        port_nums = [p["port"] for p in open_ports]
+
+        if 161 not in port_nums:
+            return
+
+        ip = self.recon.get(
+            "dns", {}
+        ).get("ip", self.target)
+
+        # Try default community strings via UDP
+        try:
+            import socket
+            sock = socket.socket(
+                socket.AF_INET,
+                socket.SOCK_DGRAM
+            )
+            sock.settimeout(3)
+
+            # SNMP v1 GET request for sysDescr OID
+            # Community string: "public"
+            snmp_get = bytes([
+                0x30, 0x26,          # SEQUENCE
+                0x02, 0x01, 0x00,    # version: 1
+                0x04, 0x06,          # community string length
+                0x70, 0x75, 0x62,    # "pub"
+                0x6c, 0x69, 0x63,    # "lic"
+                0xa0, 0x19,          # GetRequest PDU
+                0x02, 0x04, 0x00, 0x00, 0x00, 0x01,
+                0x02, 0x01, 0x00,
+                0x02, 0x01, 0x00,
+                0x30, 0x0b,
+                0x30, 0x09,
+                0x06, 0x05,
+                0x2b, 0x06, 0x01, 0x02, 0x01,
+                0x05, 0x00,
+            ])
+
+            sock.sendto(snmp_get, (ip, 161))
+            response, _ = sock.recvfrom(1024)
+            sock.close()
+
+            if response and len(response) > 10:
+                self._add(
+                    "HIGH",
+                    "SNMP Default Community String 'public'",
+                    "SNMP service responds to default community "
+                    "string 'public'. Network device information "
+                    "including interfaces, routing tables, and "
+                    "system details are readable.",
+                    port=161, service="SNMP",
+                    evidence=(
+                        f"SNMP GET with community='public' "
+                        f"→ {len(response)} byte response"
+                    ),
+                    fix=(
+                        "Change SNMP community strings.\n"
+                        "Upgrade to SNMPv3 with auth+encryption.\n"
+                        "Restrict SNMP to management hosts only:\n"
+                        "iptables -A INPUT -p udp --dport 161 "
+                        "-s mgmt_ip -j ACCEPT\n"
+                        "iptables -A INPUT -p udp "
+                        "--dport 161 -j DROP"
+                    ),
+                    cve="CWE-287",
+                    cvss="7.5"
+                )
+        except Exception:
+            pass
