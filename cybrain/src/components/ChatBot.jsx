@@ -246,7 +246,7 @@ const ChatBot = ({
     // Inline dashboard version
     if (position === 'inline') {
         return (
-            <div className="w-full h-full flex flex-col rounded-3xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-3xl">
+            <div className="w-full min-h-[600px] flex flex-col rounded-3xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-3xl">
                 {renderHeader()}
                 {renderMessages()}
                 {renderSuggestions()}

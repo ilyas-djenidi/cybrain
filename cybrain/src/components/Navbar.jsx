@@ -45,6 +45,14 @@ const Navbar = () => {
                         SCANNER
                     </Link>
                     <Link
+                        to="/reports"
+                        className="font-orbitron text-[10px] md:text-xs font-bold tracking-[0.2em]
+                                   uppercase text-gray-400 hover:text-cyan-400
+                                   transition-all duration-300 hidden md:block"
+                    >
+                        REPORTS
+                    </Link>
+                    <Link
                         to="/pricing"
                         className={`font-orbitron text-[10px] md:text-xs font-bold tracking-[0.2em]
                                    uppercase transition-all duration-300 ${

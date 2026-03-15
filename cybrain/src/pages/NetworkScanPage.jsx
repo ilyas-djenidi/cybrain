@@ -353,9 +353,12 @@ const NetworkScanPage = () => {
                                             <a href="/scan/apache" className="text-[10px] font-orbitron text-gray-600 hover:text-cyan-400 transition-all uppercase">Config Scanner</a>
                                             <a href="/scan/code" className="text-[10px] font-orbitron text-gray-600 hover:text-cyan-400 transition-all uppercase">Code Analyzer</a>
                                         </div>
-                                        <button className="px-8 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-orbitron text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all uppercase flex items-center gap-2">
+                                        <a 
+                                            href="/download_report"
+                                            className="px-8 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-orbitron text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all uppercase flex items-center gap-2"
+                                        >
                                             <span>📥</span> EXPORT MD REPORT
-                                        </button>
+                                        </a>
                                     </div>
                                 </motion.div>
                             ) : loading ? (

@@ -53,6 +53,18 @@ export default defineConfig({
         timeout:      60000,
         proxyTimeout: 60000,
       },
+      '/download_report_csv': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      60000,
+        proxyTimeout: 60000,
+      },
+      '/download_report_json': {
+        target:       'http://127.0.0.1:5000',
+        changeOrigin: true,
+        timeout:      60000,
+        proxyTimeout: 60000,
+      },
       '/download_fixed': {
         target:       'http://127.0.0.1:5000',
         changeOrigin: true,
