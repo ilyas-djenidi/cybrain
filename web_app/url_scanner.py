@@ -107,7 +107,7 @@ class ExtendedChecks:
     """
 
     # ?? 1. RACE CONDITION (CWE-362) ????????????????????????????????????????
-    def _race_condition(self):
+    def _race_condition_check(self):
         """
         Fire N simultaneous identical POST requests to state-changing endpoints.
         If ? THRESHOLD succeed, the endpoint lacks atomic locking.
@@ -179,7 +179,7 @@ class ExtendedChecks:
                 break
 
     # ?? 2. MASS ASSIGNMENT (CWE-915) ??????????????????????????????????????
-    def _mass_assignment(self):
+    def _mass_assignment_check(self):
         """
         Send privileged fields (isAdmin, role, balance) in registration/update
         payloads. If the server reflects them back, mass assignment is present.
@@ -246,7 +246,7 @@ class ExtendedChecks:
                 break
 
     # ?? 3. LOG4SHELL / SPRING4SHELL ???????????????????????????????????????
-    def _log4shell_spring4shell(self):
+    def _log4shell_check(self):
         """
         CVE-2021-44228 (Log4Shell) - passive canary injection via HTTP headers.
         CVE-2022-22965 (Spring4Shell) - Spring MVC class-binding probe.
@@ -337,12 +337,11 @@ class ExtendedChecks:
                             ),
                             cwe="CWE-94", cvss="9.8",
                         )
-                        break
             except Exception:
                 pass
 
-    # ?? 4. GRAPHQL (CWE-200 / CWE-770) ????????????????????????????????????
-    def _graphql_checks(self):
+    # ?? 4. GRAPHQL CHECKS ??????????????????????????????????????????????????
+    def _graphql_introspection(self):
         """
         Check for: introspection enabled, batch query abuse, old API versions.
         """
@@ -485,10 +484,10 @@ class UrlScanner:
     @staticmethod
     def _attach_extended(checker) -> None:
         for name in (
-            "_race_condition",
-            "_mass_assignment",
-            "_log4shell_spring4shell",
-            "_graphql_checks",
+            "_race_condition_check",
+            "_mass_assignment_check",
+            "_log4shell_check",
+            "_graphql_introspection",
         ):
             method = getattr(ExtendedChecks, name)
             setattr(checker, name, types.MethodType(method, checker))
@@ -537,19 +536,8 @@ class UrlScanner:
         self._attach_extended(checker)
 
         # Core scan - A01-A10 + CWE/SANS extras (parallel inside run_all)
+        # Note: Extended checks are now called INSIDE run_all()
         checker.run_all()
-
-        # Extended checks - sequential after core
-        for name in (
-            "_race_condition",
-            "_mass_assignment",
-            "_log4shell_spring4shell",
-            "_graphql_checks",
-        ):
-            try:
-                getattr(checker, name)()
-            except Exception as e:
-                print(f"[!] Extended check {name} failed: {e}")
 
         # ?? Deduplicate ????????????????????????????????????????????????????
         seen:   set  = set()
