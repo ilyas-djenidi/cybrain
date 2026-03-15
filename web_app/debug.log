@@ -92,3 +92,9 @@
  * Running on http://127.0.0.1:5000
  * Running on http://192.168.1.34:5000
 2026-03-15 19:50:57,133 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 20:05:07,540 INFO: Backend started
+2026-03-15 20:05:15,548 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 20:05:15,548 INFO: [33mPress CTRL+C to quit[0m
