@@ -152,6 +152,16 @@ function HomePage() {
 }
 
 function App() {
+    React.useEffect(() => {
+        const ping = () => {
+            const backend = import.meta.env.VITE_API_URL || '';
+            fetch(`${backend}/health`).catch(() => {});
+        };
+        ping();
+        const interval = setInterval(ping, 10 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <BrowserRouter>
             <div className="min-h-screen bg-black">
