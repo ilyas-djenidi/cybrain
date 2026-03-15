@@ -142,8 +142,16 @@ def _fixed_dir() -> str:
     return d
 
 # =============================================================
-#  HEALTH
+#  HEALTH & ROOT
 # =============================================================
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({
+        "message": "Cybrain Intelligence API v2.1 is LIVE",
+        "docs": "https://github.com/ilyas-djenidi/cybrain",
+        "status": "ready"
+    })
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
