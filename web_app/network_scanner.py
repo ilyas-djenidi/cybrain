@@ -26,6 +26,8 @@ from datetime import datetime
 from network_recon import NetworkRecon
 from network_vulns import NetworkVulnScanner
 from report_generator import ReportGenerator
+import logging
+import traceback
 
 # Prevent UnicodeEncodeError on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -211,7 +213,9 @@ class NetworkScanner:
             )
             findings = vuln_scanner.scan_all()
         except Exception as e:
+            tb = traceback.format_exc()
             print(f"[!] Vuln scan failed: {e}")
+            logging.error(f"[NETWORK VULN ERROR] {e}\n{tb}")
             findings = []
 
         # Sort by severity

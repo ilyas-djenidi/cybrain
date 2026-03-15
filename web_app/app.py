@@ -54,18 +54,25 @@ except Exception:
     pass
 
 import builtins
-_orig_print = builtins.print
+import io
+import sys
+
+# Foolproof safe_print to prevent recursion on reloads
+if not hasattr(builtins, '_orig_print_cybrain'):
+    builtins._orig_print_cybrain = builtins.print
 
 def safe_print(*args, **kwargs):
     try:
-        _orig_print(*args, **kwargs)
+        builtins._orig_print_cybrain(*args, **kwargs)
     except (UnicodeEncodeError, BlockingIOError):
         try:
             # Fallback: strip and print as ASCII
             ascii_args = [str(a).encode('ascii', 'replace').decode('ascii') for a in args]
-            _orig_print(*ascii_args, **kwargs)
+            builtins._orig_print_cybrain(*ascii_args, **kwargs)
         except Exception:
             pass
+    except Exception:
+        pass
 
 builtins.print = safe_print
 
