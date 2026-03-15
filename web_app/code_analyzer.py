@@ -5,8 +5,8 @@
   PFE Master 2 - Information Security
   University of Mohamed Boudiaf, M'sila - Algeria
 
-  COVERAGE (static patterns - no AI)
-  ????????????????????????????????????
+  COVERAGE
+  --------
   SQL Injection             CWE-89
   XSS                       CWE-79
   Hardcoded Credentials     CWE-798
@@ -22,20 +22,11 @@
   XML/XXE Risk              CWE-611
   Insecure Random           CWE-338
   Log Injection             CWE-117
-  Race Condition            CWE-362
   Mass Assignment           CWE-915
   Prototype Pollution (JS)  CWE-1321
   CORS Misconfiguration     CWE-942
   Sensitive Data Logging    CWE-532
-
-  IMPROVEMENTS vs original
-  ????????????????????????
-  * 20 vulnerability categories (was 11)
-  * Multi-language support: Python, PHP, JS/TS, Java, C#, Ruby, Go, C/C++
-  * Context-aware patterns (language-specific)
-  * Line-range reporting - up to 3 occurrences per pattern
-  * Confidence scoring (HIGH/MEDIUM/LOW)
-  * AI lazy-load is unchanged (safe if Gemini unavailable)
+  Missing SRI Hash          CWE-829
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
 ===============================================================
@@ -43,11 +34,7 @@
 
 import re
 
-# ?? Static vulnerability patterns ?????????????????????????????????????????
-# Each entry: list of (regex_pattern, language_hint_or_None)
-# language_hint = None means applies to all languages
-
-STATIC_PATTERNS: dict = {
+STATIC_PATTERNS = {
 
     "SQL Injection": {
         "severity": "CRITICAL",
@@ -91,8 +78,8 @@ STATIC_PATTERNS: dict = {
             (r'print\s+\$_',                         "php"),
             (r'Response\.Write.*?Request\.',          "cs"),
             (r'\.html\s*\(.*?\$',                    "js"),
-            (r'v-html\s*=',                          "js"),   # Vue.js
-            (r'dangerouslySetInnerHTML',              "js"),   # React
+            (r'v-html\s*=',                          "js"),
+            (r'dangerouslySetInnerHTML',              "js"),
         ],
         "fix": (
             "Encode ALL user output:\n"
@@ -298,7 +285,7 @@ STATIC_PATTERNS: dict = {
         "patterns": [
             (r'jwt\.decode\s*\(.*?verify.*?false',   None),
             (r'verify\s*:\s*false',                  None),
-            (r'algorithms\s*=\s*\[\s*["\']none["\']',None),
+            (r'algorithms\s*=\s*\[\s*["\']none["\']', None),
             (r'alg.*?["\']none["\']',                None),
             (r'options\s*=\s*\{.*?verify.*?false',   None),
         ],
@@ -323,7 +310,7 @@ STATIC_PATTERNS: dict = {
         ],
         "fix": (
             "Escape LDAP special characters in all user inputs:\n"
-            "Characters to escape: ( ) * \\ NUL / @ = + < > , ;\n"
+            "Characters to escape: ( ) * \\\\ NUL / @ = + < > , ;\n"
             "Python: ldap3 library handles escaping automatically\n"
             "Use parameterized LDAP filters where available"
         ),
@@ -334,14 +321,14 @@ STATIC_PATTERNS: dict = {
         "cwe":      "CWE-611",
         "owasp":    "A05:2025",
         "patterns": [
-            (r'etree\.parse\s*\(',                                    "py"),
-            (r'etree\.fromstring\s*\(',                               "py"),
-            (r'xml\.dom\.minidom\.parseString',                       "py"),
-            (r'DocumentBuilderFactory\s*\.',                          "java"),
-            (r'SAXParserFactory\s*\.',                                "java"),
-            (r'XmlDocument\s*\(',                                     "cs"),
-            (r'simplexml_load_string\s*\(\s*\$_',                    "php"),
-            (r'DOMDocument\s*\(',                                     "php"),
+            (r'etree\.parse\s*\(',                   "py"),
+            (r'etree\.fromstring\s*\(',              "py"),
+            (r'xml\.dom\.minidom\.parseString',      "py"),
+            (r'DocumentBuilderFactory\s*\.',         "java"),
+            (r'SAXParserFactory\s*\.',               "java"),
+            (r'XmlDocument\s*\(',                    "cs"),
+            (r'simplexml_load_string\s*\(\s*\$_',   "php"),
+            (r'DOMDocument\s*\(',                    "php"),
         ],
         "fix": (
             "Disable external entity processing:\n"
@@ -364,7 +351,6 @@ STATIC_PATTERNS: dict = {
             (r'\brand\s*\(',                       "php"),
             (r'\bmt_rand\s*\(',                    "php"),
             (r'new\s+Random\s*\(',                 "java"),
-            (r'new\s+Random\s*\(',                 "cs"),
         ],
         "fix": (
             "Use cryptographically secure random generators:\n"
@@ -381,17 +367,17 @@ STATIC_PATTERNS: dict = {
         "cwe":      "CWE-117",
         "owasp":    "A09:2025",
         "patterns": [
-            (r'logging\.\w+\s*\(.*?request\.',       "py"),
-            (r'logger\.\w+\s*\(.*?request\.',        "py"),
-            (r'console\.log\s*\(.*?req\.',           "js"),
-            (r'error_log\s*\(\s*\$_',               "php"),
-            (r'log\.info\s*\(.*?request\.',          "java"),
-            (r'Log\.\w+\s*\(.*?Request\.',           "cs"),
+            (r'logging\.\w+\s*\(.*?request\.',      "py"),
+            (r'logger\.\w+\s*\(.*?request\.',       "py"),
+            (r'console\.log\s*\(.*?req\.',          "js"),
+            (r'error_log\s*\(\s*\$_',              "php"),
+            (r'log\.info\s*\(.*?request\.',         "java"),
+            (r'Log\.\w+\s*\(.*?Request\.',          "cs"),
         ],
         "fix": (
             "Sanitise user input before logging:\n"
             "Python: logger.info('User: %s', user_input.replace('\\n','\\\\n'))\n"
-            "Strip or encode newline characters (\\r\\n) to prevent log forging\n"
+            "Strip or encode newline characters to prevent log forging\n"
             "Never log raw user input, passwords, or session tokens"
         ),
     },
@@ -413,7 +399,7 @@ STATIC_PATTERNS: dict = {
             "Django: UserForm(request.POST, fields=['username','email'])\n"
             "Rails:  params.require(:user).permit(:username, :email)\n"
             "Laravel: $request->only(['username', 'email'])\n"
-            "JS/Node: const { username, email } = req.body  (destructure only safe fields)"
+            "JS/Node: const { username, email } = req.body"
         ),
     },
 
@@ -423,10 +409,10 @@ STATIC_PATTERNS: dict = {
         "owasp":    "A03:2025",
         "patterns": [
             (r'__proto__',                           "js"),
-            (r'constructor\s*\[',                   "js"),
-            (r'merge\s*\(.*?__proto__',             "js"),
-            (r'deepMerge\s*\(',                     "js"),
-            (r'\.constructor\.prototype',           "js"),
+            (r'constructor\s*\[',                    "js"),
+            (r'merge\s*\(.*?__proto__',              "js"),
+            (r'deepMerge\s*\(',                      "js"),
+            (r'\.constructor\.prototype',            "js"),
         ],
         "fix": (
             "Prevent prototype pollution:\n"
@@ -442,10 +428,9 @@ STATIC_PATTERNS: dict = {
         "cwe":      "CWE-942",
         "owasp":    "A02:2025",
         "patterns": [
-            (r'Access-Control-Allow-Origin.*?\*',     None),
-            (r'cors\s*\(\s*\)',                       "js"),   # bare cors() = wildcard
+            (r'Access-Control-Allow-Origin.*?\*',         None),
+            (r'cors\s*\(\s*\)',                           "js"),
             (r'CORS\s*\(.*?allow_all_origins\s*=\s*True', "py"),
-            (r'response\[.Access-Control-Allow-Origin.\]\s*=\s*["\*"]', None),
         ],
         "fix": (
             "Restrict CORS to trusted origins:\n"
@@ -461,7 +446,7 @@ STATIC_PATTERNS: dict = {
         "cwe":      "CWE-532",
         "owasp":    "A09:2025",
         "patterns": [
-            (r'log.*?(password|passwd|secret|token|api_key|credit_card|ssn)',  None),
+            (r'log.*?(password|passwd|secret|token|api_key|credit_card|ssn)', None),
             (r'print.*?(password|passwd|secret)',    None),
             (r'console\.log.*?(password|token|secret)', "js"),
             (r'logger\.\w+.*?password',              None),
@@ -469,7 +454,7 @@ STATIC_PATTERNS: dict = {
         "fix": (
             "Never log sensitive data:\n"
             "Redact passwords, tokens, API keys before logging\n"
-            "Python: logger.info('Login attempt for user: %s', username)  # NOT password\n"
+            "Python: logger.info('Login attempt for user: %s', username)\n"
             "Use structured logging with field-level redaction\n"
             "Implement log scrubbing middleware"
         ),
@@ -484,11 +469,12 @@ STATIC_PATTERNS: dict = {
             (r'href=["\']https?://[^"\']+["\'](?!.*integrity=)', "js"),
         ],
         "fix": (
-            "Include an integrity attribute for external resources to ensure they haven't been tampered with:\n"
-            "HTML/JSX: <script src=\"https://...\" integrity=\"sha384-...\" crossorigin=\"anonymous\"></script>"
+            "Include integrity attribute for external resources:\n"
+            "HTML/JSX: <script src=\"https://...\" integrity=\"sha384-...\"\n"
+            "          crossorigin=\"anonymous\"></script>\n"
+            "Generate hash: openssl dgst -sha384 -binary file.js | openssl base64 -A"
         ),
     },
-
 }
 
 
@@ -502,7 +488,6 @@ class CodeAnalyzer:
     def __init__(self):
         self._agent = None
 
-    # ?? AI lazy load ???????????????????????????????????????????????????????
     def _get_agent(self):
         if self._agent is not None:
             return self._agent
@@ -511,11 +496,10 @@ class CodeAnalyzer:
             self._agent = CybrainAgent()
             return self._agent
         except Exception as e:
-            print(f"[CODE ANALYZER] AI agent unavailable: {e}")
+            print("[CODE ANALYZER] AI agent unavailable: {}".format(e))
             return None
 
-    # ?? Language detection ?????????????????????????????????????????????????
-    def _detect_language(self, filename: str) -> str:
+    def _detect_language(self, filename):
         ext = filename.rsplit(".", 1)[-1].lower()
         return {
             "py":       "Python",
@@ -540,8 +524,7 @@ class CodeAnalyzer:
             "bash":     "Shell",
         }.get(ext, "Unknown")
 
-    def _lang_code(self, language: str) -> str:
-        """Return short lang key used in pattern language_hint."""
+    def _lang_code(self, language):
         return {
             "Python":       "py",
             "PHP":          "php",
@@ -553,19 +536,12 @@ class CodeAnalyzer:
             "Go":           "go",
         }.get(language, "")
 
-    # ?? Static analysis ????????????????????????????????????????????????????
-    def _static_analysis(self, content: str, lines: list,
-                          filename: str, language: str) -> list:
-        """
-        Pure regex analysis - no network, no AI.
-        Returns up to 3 occurrences per vulnerability category.
-        """
-        findings = []
-        lang_key = self._lang_code(language)
+    def _static_analysis(self, content, lines, filename, language):
+        findings  = []
+        lang_key  = self._lang_code(language)
 
         for vuln_name, info in STATIC_PATTERNS.items():
             for pattern, lang_hint in info["patterns"]:
-                # Skip pattern if language-specific and doesn't match
                 if lang_hint and lang_key and lang_hint != lang_key:
                     continue
 
@@ -588,69 +564,58 @@ class CodeAnalyzer:
                     except Exception:
                         pass
                 if hits:
-                    break  # Found at least one hit for this vuln - skip remaining patterns
+                    break
 
-        # Sort CRITICAL -> LOW
         order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
         findings.sort(key=lambda f: order.get(f.get("severity", "LOW"), 9))
         return findings
 
-    # ?? UI formatter ???????????????????????????????????????????????????????
-    def _format_for_ui(self, findings: list, filename: str) -> list:
-        return [{
-            "severity": f["severity"],
-            "line":     str(f["line"]),
-            "message":  (
-                f"<strong>{f['title']}</strong> "
-                f"detected at line {f['line']}."
-                "<br><br>"
-                "<strong>Vulnerable code:</strong><br>"
-                f"<code>{f['code_line']}</code>"
-                "<br><br>"
-                "<strong>Recommendation:</strong><br>"
-                f"{f['fix'].replace(chr(10), '<br>')}"
-                "<br><br>"
-                f"<strong>CWE:</strong> "
-                f"<a href='https://cwe.mitre.org/data/definitions/"
-                f"{f['cwe'].replace('CWE-','')}' target='_blank'>"
-                f"{f['cwe']}</a>"
-                + (f"<br><strong>OWASP 2025:</strong> {f['owasp']}"
-                   if f.get("owasp") else "")
-            ),
-            "code": f["title"],
-            "file": filename,
-        } for f in findings]
+    def _format_for_ui(self, findings, filename):
+        result = []
+        for f in findings:
+            cwe_id  = f["cwe"].replace("CWE-", "")
+            cwe_url = "https://cwe.mitre.org/data/definitions/{}.html".format(cwe_id)
+            owasp_str = (
+                "<br><strong>OWASP 2025:</strong> {}".format(f["owasp"])
+                if f.get("owasp") else ""
+            )
+            result.append({
+                "severity": f["severity"],
+                "line":     str(f["line"]),
+                "message":  (
+                    "<strong>{}</strong> detected at line {}.".format(f["title"], f["line"]) +
+                    "<br><br>"
+                    "<strong>Vulnerable code:</strong><br>"
+                    "<code>{}</code>".format(f["code_line"]) +
+                    "<br><br>"
+                    "<strong>Recommendation:</strong><br>" +
+                    f["fix"].replace("\n", "<br>") +
+                    "<br><br>"
+                    "<strong>CWE:</strong> "
+                    "<a href='{}' target='_blank'>{}</a>".format(cwe_url, f["cwe"]) +
+                    owasp_str
+                ),
+                "code": f["title"],
+                "file": filename,
+            })
+        return result
 
-    # ?? Main analysis entry point ??????????????????????????????????????????
-    def analyze(self, content: str, filename: str,
-                use_ai: bool = True) -> dict:
-        """
-        Full analysis pipeline.
-        1. Static pattern scan (always runs, instant)
-        2. AI deep analysis via Gemini (optional)
-        """
+    def analyze(self, content, filename, use_ai=True):
         language = self._detect_language(filename)
         lines    = content.splitlines()
 
-        # Phase 1 - Static
         static = self._static_analysis(content, lines, filename, language)
 
-        # Phase 2 - AI (lazy, optional)
         ai_result = None
         if use_ai:
             try:
                 agent = self._get_agent()
                 if agent:
-                    ai_result = agent.analyze_code_file(
-                        content, filename, language
-                    )
+                    ai_result = agent.analyze_code_file(content, filename, language)
                 else:
-                    ai_result = (
-                        "AI analysis unavailable. "
-                        "Check GEMINI_API_KEY in .env"
-                    )
+                    ai_result = "AI analysis unavailable. Check GEMINI_API_KEY in .env"
             except Exception as e:
-                ai_result = f"AI analysis error: {str(e)}"
+                ai_result = "AI analysis error: {}".format(str(e))
 
         return {
             "filename":        filename,
@@ -665,20 +630,15 @@ class CodeAnalyzer:
             "ui_findings":     self._format_for_ui(static, filename),
         }
 
-    def fix_code(self, content: str, filename: str,
-                 findings=None) -> dict:
-        """Generate fixed version of code using AI agent."""
+    def fix_code(self, content, filename, findings=None):
         try:
             agent = self._get_agent()
             if agent:
                 return agent.fix_code(content, filename)
         except Exception as e:
-            print(f"[CODE ANALYZER] Fix error: {e}")
+            print("[CODE ANALYZER] Fix error: {}".format(e))
         return {
-            "explanation": (
-                "AI fix unavailable. "
-                "Check GEMINI_API_KEY in .env file."
-            ),
-            "fixed_code": None,
-            "filename":   filename,
+            "explanation": "AI fix unavailable. Check GEMINI_API_KEY in .env file.",
+            "fixed_code":  None,
+            "filename":    filename,
         }

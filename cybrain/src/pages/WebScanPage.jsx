@@ -333,11 +333,7 @@ const WebScanPage = () => {
                                                    mb-2 flex items-center gap-2">
                                         <span className="text-xl">🤖</span> AI SECURITY AUDIT
                                     </h3>
-                                    <p className="text-gray-500
-                                                  text-xs
-                                                  font-inter">
-                                        Cybrain Offline Engine • Deterministic remediation & expert advice
-                                    </p>
+
                                 </div>
                                 <button
                                     onClick={handleAiAnalysis}

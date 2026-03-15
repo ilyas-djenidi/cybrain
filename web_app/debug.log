@@ -98,3 +98,18 @@
  * Running on http://127.0.0.1:5000
  * Running on http://192.168.1.34:5000
 2026-03-15 20:05:15,548 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 21:21:14,120 INFO: Backend started
+2026-03-15 21:21:19,352 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 21:21:19,352 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 21:21:56,541 INFO: 127.0.0.1 - - [15/Mar/2026 21:21:56] "POST /api/chat HTTP/1.1" 200 -
+2026-03-15 21:23:55,260 INFO: 127.0.0.1 - - [15/Mar/2026 21:23:55] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 21:24:45,416 INFO: 127.0.0.1 - - [15/Mar/2026 21:24:45] "POST /fix_code HTTP/1.1" 200 -
+2026-03-15 21:24:48,666 INFO: 127.0.0.1 - - [15/Mar/2026 21:24:48] "POST /fix_code HTTP/1.1" 200 -
+2026-03-15 21:25:17,025 INFO: 127.0.0.1 - - [15/Mar/2026 21:25:17] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 21:25:55,147 INFO: 127.0.0.1 - - [15/Mar/2026 21:25:55] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 21:26:05,287 INFO: 127.0.0.1 - - [15/Mar/2026 21:26:05] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 21:26:06,094 INFO: 127.0.0.1 - - [15/Mar/2026 21:26:06] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 21:26:13,730 INFO: 127.0.0.1 - - [15/Mar/2026 21:26:13] "POST /analyze_code HTTP/1.1" 200 -

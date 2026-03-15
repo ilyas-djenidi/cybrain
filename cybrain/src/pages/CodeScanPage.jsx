@@ -129,11 +129,7 @@ const CodeScanPage = () => {
                             VULNERABILITY
                         </span> SCANNER
                     </h1>
-                    <p className="text-gray-500 text-xs md:text-sm
-                                  font-inter max-w-2xl leading-relaxed">
-                        Cybrain Offline Engine detects vulnerabilities and generates
-                        hardened versions of your code.
-                    </p>
+
                 </div>
 
                 <div className="grid grid-cols-1
@@ -370,29 +366,6 @@ const CodeScanPage = () => {
                                             </div>
                                         ))}
                                     </div>
-
-                                    {/* AI Analysis */}
-                                    {result.ai_analysis && (
-                                        <div className="scanner-glass
-                                                        rounded-2xl p-6 border border-purple-500/20 shadow-lg shadow-purple-500/5">
-                                            <p className="font-orbitron
-                                                           text-purple-400
-                                                           text-[10px]
-                                                           tracking-[0.2em]
-                                                           uppercase mb-4 flex items-center gap-2">
-                                                <span className="text-base">✦</span> AI Strategic Review
-                                            </p>
-                                            <div className="text-gray-400
-                                                            text-xs
-                                                            font-inter
-                                                            whitespace-pre-wrap
-                                                            leading-relaxed
-                                                            max-h-64
-                                                            overflow-y-auto pr-2 custom-scrollbar">
-                                                {result.ai_analysis}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {/* Fixed Code Output */}
                                     {fixResult && (
