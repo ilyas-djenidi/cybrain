@@ -101,11 +101,49 @@ CORS(app,
 )
 
 @app.after_request
-def add_cors(response):
-    # Comprehensive safety net for CORS headers
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+def add_header(response):
+    # Ensure CORS headers are present even if the original response didn't have them
+    origin = request.headers.get('Origin')
+    allowed_origins = ["https://cybrain-ai.netlify.app", "http://localhost:5173", "http://localhost:3000"]
+    
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    elif not origin:
+        # Fallback for non-browser requests or same-origin
+        response.headers['Access-Control-Allow-Origin'] = "*"
+    
+    return response
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Global error handler to ensure CORS headers on crashes."""
+    logging.error(f"Unhandled Exception: {str(e)}\n{traceback.format_exc()}")
+    
+    # Extract status code if available
+    status_code = 500
+    if hasattr(e, 'code'):
+        status_code = e.code
+        
+    response = jsonify({
+        "error": "Internal Server Error",
+        "message": str(e),
+        "type": e.__class__.__name__,
+        "status": status_code
+    })
+    
+    # Manually add CORS headers because after_request might not run on some exceptions
+    origin = request.headers.get('Origin')
+    allowed_origins = ["https://cybrain-ai.netlify.app", "http://localhost:5173", "http://localhost:3000"]
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    else:
+        response.headers['Access-Control-Allow-Origin'] = "*"
+        
+    response.status_code = status_code
     return response
 
 # Handle OPTIONS preflight explicitly for long-running endpoints
