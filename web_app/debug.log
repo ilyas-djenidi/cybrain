@@ -86,3 +86,9 @@
 2026-03-15 19:42:02,633 DEBUG: Starting new HTTP connection (1): 192.168.1.1:80
 2026-03-15 19:42:02,643 DEBUG: http://192.168.1.1:80 "GET /console HTTP/1.1" 400 None
 2026-03-15 19:42:02,662 INFO: 127.0.0.1 - - [15/Mar/2026 19:42:02] "POST /scan_network HTTP/1.1" 200 -
+2026-03-15 19:50:50,970 INFO: Backend started
+2026-03-15 19:50:57,133 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 19:50:57,133 INFO: [33mPress CTRL+C to quit[0m

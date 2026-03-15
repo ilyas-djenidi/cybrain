@@ -475,6 +475,20 @@ STATIC_PATTERNS: dict = {
         ),
     },
 
+    "Missing SRI Hash": {
+        "severity": "LOW",
+        "cwe":      "CWE-829",
+        "owasp":    "A03:2025",
+        "patterns": [
+            (r'src=["\']https?://[^"\']+["\'](?!.*integrity=)', "js"),
+            (r'href=["\']https?://[^"\']+["\'](?!.*integrity=)', "js"),
+        ],
+        "fix": (
+            "Include an integrity attribute for external resources to ensure they haven't been tampered with:\n"
+            "HTML/JSX: <script src=\"https://...\" integrity=\"sha384-...\" crossorigin=\"anonymous\"></script>"
+        ),
+    },
+
 }
 
 
