@@ -1,208 +1,246 @@
 """
-CYBRAIN — Network Vulnerability Scanner
-PFE Master 2 — Information Security
-Main controller combining recon + vuln detection
+═══════════════════════════════════════════════════════════════
+  CYBRAIN — Network Scanner Controller  (v2.0)
+  PFE Master 2 — Information Security
+  University of Mohamed Boudiaf, M'sila — Algeria
+
+  IMPROVEMENTS vs original
+  ────────────────────────
+  • Richer recon summary card (IP, OS, open ports, reverse DNS, IPv6)
+  • Scan duration timer in console output
+  • Robust _format_for_ui — handles all finding fields safely
+  • _calc_overall_risk uses raw findings (not UI-formatted)
+  • Port risk classifier — marks CRITICAL/HIGH/MEDIUM ports in summary
+  • Graceful fallback if NetworkRecon or NetworkVulnScanner fails
+  • Identical public API to original (drop-in replacement)
+
+  FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
+═══════════════════════════════════════════════════════════════
 """
 
-import socket
 import os
-import csv
-import re
-import time
 from datetime import datetime
+
 from network_recon import NetworkRecon
 from network_vulns import NetworkVulnScanner
 from report_generator import ReportGenerator
 
 SEVERITY_ORDER = {
     "CRITICAL": 0, "HIGH": 1,
-    "MEDIUM": 2, "LOW": 3, "INFO": 4
+    "MEDIUM":   2, "LOW":  3, "INFO": 4,
+}
+
+# Ports considered high-risk for summary display
+HIGH_RISK_PORTS = {
+    21, 22, 23, 445, 3389, 2375, 6379,
+    27017, 9200, 11211, 5984, 4444, 3306,
+    5432, 1433, 5900, 502, 47808,
 }
 
 
 class NetworkScanner:
     """
     Full network security assessment controller.
-    Combines reconnaissance + vulnerability detection
-    + professional report generation.
+    Combines Phase 1 (recon) + Phase 2 (vuln detection)
+    + report generation + React UI formatting.
+
+    Public API (identical to original)
+    ───────────────────────────────────
+    scanner = NetworkScanner(target)
+    results = scanner.scan()            → list[dict]
+    risk    = scanner._calc_overall_risk()
+    recon   = scanner.recon_data        → dict
     """
 
-    def __init__(self, target, timeout=30):
-        # Clean target — remove http:// etc
-        self.target = self._clean_target(target)
-        self.timeout = timeout
-        self.results = []
-        self.recon_data = {}
+    def __init__(self, target: str, timeout: int = 30):
+        self.target     = self._clean_target(target)
+        self.timeout    = timeout
+        self.results:    list = []
+        self.recon_data: dict = {}
+        self._raw_findings: list = []
+
         self.report_dir = os.path.join(
-            os.path.dirname(
-                os.path.dirname(os.path.abspath(__file__))
-            ),
-            "report"
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "report",
         )
         os.makedirs(self.report_dir, exist_ok=True)
 
-    def _clean_target(self, target):
-        """Extract hostname/IP from URL."""
-        target = target.strip()
-        # Remove protocol
-        for prefix in ["https://", "http://", "ftp://"]:
-            if target.startswith(prefix):
-                target = target[len(prefix):]
-        # Remove path
-        target = target.split("/")[0]
-        # Remove port
-        target = target.split(":")[0]
-        return target
+    # ── Target cleaning ────────────────────────────────────────────────────
+    @staticmethod
+    def _clean_target(target: str) -> str:
+        """Strip protocol, path, and port from any input."""
+        t = target.strip()
+        for prefix in ("https://", "http://", "ftp://"):
+            if t.startswith(prefix):
+                t = t[len(prefix):]
+        t = t.split("/")[0]
+        t = t.split(":")[0]
+        return t
 
-    def _format_for_ui(self, finding):
-        """Format finding for React UI display."""
+    # ── UI formatter ───────────────────────────────────────────────────────
+    def _format_for_ui(self, finding: dict) -> dict:
+        """Convert raw finding dict to React UI format."""
+        parts = []
+
         desc  = finding.get("description", "")
-        fix   = finding.get("fix", "")
-        evid  = finding.get("evidence", "")
-        cve   = finding.get("cve", "")
         port  = finding.get("port")
+        evid  = finding.get("evidence", "")
+        fix   = finding.get("fix", "")
+        cve   = finding.get("cve", "")
         cvss  = finding.get("cvss", "")
 
-        parts = [desc]
+        if desc:
+            parts.append(f"<p>{desc}</p>")
         if port:
             parts.append(
-                f"<strong>Port:</strong> "
-                f"<code>{port}/tcp</code>"
+                f"<strong>Port:</strong> <code>{port}/tcp</code>"
             )
         if evid:
             parts.append(
-                f"<strong>Evidence:</strong>"
-                f"<br><code>{evid}</code>"
+                f"<strong>Evidence:</strong><br><code>{evid}</code>"
             )
         if fix:
             parts.append(
-                f"<strong>Remediation:</strong>"
-                f"<br>{fix}"
+                f"<strong>Remediation:</strong><br>"
+                + fix.replace("\n", "<br>")
             )
         if cve:
-            parts.append(
-                f"<strong>CVE/CWE:</strong> {cve}"
-            )
+            parts.append(f"<strong>CVE/CWE:</strong> {cve}")
         if cvss:
-            parts.append(
-                f"<strong>CVSS Score:</strong> {cvss}"
-            )
+            parts.append(f"<strong>CVSS Score:</strong> {cvss}")
 
         return {
             "severity": finding.get("severity", "INFO"),
             "line":     "-",
-            "message":  "\n\n".join(parts),
-            "code":     finding.get("title", ""),
+            "message":  "<br><br>".join(parts),
+            "code":     finding.get("title", "Unknown"),
             "file":     self.target,
         }
 
-    def scan(self):
-        """Run complete network security assessment."""
-        print(
-            f"\n[CYBRAIN NETWORK] Target: {self.target}"
-        )
+    # ── Recon summary finding ──────────────────────────────────────────────
+    def _build_summary_finding(self) -> dict:
+        """Build the INFO card shown at the top of results."""
+        dns      = self.recon_data.get("dns", {})
+        os_info  = self.recon_data.get("os",  {})
+        ports    = self.recon_data.get("ports", {})
+        open_pts = ports.get("open", [])
+
+        # Annotate high-risk ports
+        port_items = []
+        for p in open_pts[:15]:
+            risk_tag = " ⚠️" if p["port"] in HIGH_RISK_PORTS else ""
+            banner   = f" — {p['banner'][:40]}" if p.get("banner") else ""
+            port_items.append(
+                f"{p['port']}/{p['service']}{risk_tag}{banner}"
+            )
+        if len(open_pts) > 15:
+            port_items.append(f"… +{len(open_pts) - 15} more")
+
+        evidence = "<br>".join(port_items) if port_items else "No open ports found"
+
+        return {
+            "severity":    "INFO",
+            "title":       "Network Reconnaissance Summary",
+            "description": (
+                f"<strong>Target:</strong> {self.target}<br>"
+                f"<strong>IP:</strong> {dns.get('ip','N/A')}<br>"
+                f"<strong>Reverse DNS:</strong> {dns.get('reverse_dns','N/A')}<br>"
+                f"<strong>IPv6:</strong> {dns.get('ipv6','N/A')}<br>"
+                f"<strong>OS:</strong> {os_info.get('os','Unknown')} "
+                f"[{os_info.get('method','—')} / {os_info.get('confidence','—')}]<br>"
+                f"<strong>Open Ports:</strong> {ports.get('total_open',0)} "
+                f"/ {ports.get('scanned',0)} scanned"
+            ),
+            "evidence": evidence,
+            "fix":      "",
+            "cve":      "",
+            "cvss":     "",
+            "port":     None,
+            "target":   self.target,
+        }
+
+    # ── MAIN SCAN ──────────────────────────────────────────────────────────
+    def scan(self) -> list:
+        t0 = datetime.now()
+        print(f"\n[CYBRAIN NETWORK] {'═'*45}")
+        print(f"[CYBRAIN NETWORK] Target  : {self.target}")
+        print(f"[CYBRAIN NETWORK] Started : {t0.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"[CYBRAIN NETWORK] {'═'*45}")
+
+        # ── Phase 1 — Reconnaissance ───────────────────────────────────────
         print("[CYBRAIN NETWORK] Phase 1: Reconnaissance")
+        try:
+            recon = NetworkRecon(self.target, self.timeout)
+            self.recon_data = recon.run_all()
+        except Exception as e:
+            print(f"[!] Recon failed: {e}")
+            self.recon_data = {}
 
-        # Phase 1: Recon
-        recon = NetworkRecon(self.target, self.timeout)
-        self.recon_data = recon.run_all()
-
-        # Check if target is reachable
         ip = self.recon_data.get("dns", {}).get("ip")
         if not ip:
             self.results = [{
                 "severity": "HIGH",
                 "line":     "-",
                 "message":  (
-                    f"Cannot resolve target: "
-                    f"<code>{self.target}</code><br><br>"
-                    "<strong>Remediation:</strong><br>"
+                    f"<p>Cannot resolve target: <code>{self.target}</code></p>"
+                    "<strong>Suggestions:</strong><br>"
                     "• Verify the hostname/IP is correct<br>"
                     "• Check DNS resolution<br>"
-                    "• Try scanning: "
-                    "testphp.vulnweb.com or scanme.nmap.org"
+                    "• Try: testphp.vulnweb.com or scanme.nmap.org"
                 ),
                 "code": "DNS Resolution Failed",
                 "file": self.target,
             }]
             return self.results
 
-        open_count = self.recon_data.get(
-            "ports", {}
-        ).get("total_open", 0)
-        print(
-            f"[CYBRAIN NETWORK] Found {open_count} "
-            "open ports"
-        )
+        open_count = self.recon_data.get("ports", {}).get("total_open", 0)
+        print(f"[CYBRAIN NETWORK] {open_count} open ports found")
 
-        # Phase 2: Vulnerability Detection
-        print(
-            "[CYBRAIN NETWORK] "
-            "Phase 2: Vulnerability Detection"
-        )
-        vuln_scanner = NetworkVulnScanner(
-            self.target, self.recon_data, self.timeout
-        )
-        findings = vuln_scanner.scan_all()
+        # ── Phase 2 — Vulnerability Detection ─────────────────────────────
+        print("[CYBRAIN NETWORK] Phase 2: Vulnerability Detection")
+        try:
+            vuln_scanner = NetworkVulnScanner(
+                self.target, self.recon_data, self.timeout
+            )
+            findings = vuln_scanner.scan_all()
+        except Exception as e:
+            print(f"[!] Vuln scan failed: {e}")
+            findings = []
 
         # Sort by severity
         findings.sort(
-            key=lambda f: SEVERITY_ORDER.get(
-                f.get("severity", "INFO"), 99
-            )
+            key=lambda f: SEVERITY_ORDER.get(f.get("severity", "INFO"), 99)
         )
 
-        # Add recon summary as INFO finding
-        os_info = self.recon_data.get("os", {})
-        dns_info = self.recon_data.get("dns", {})
-        open_ports = self.recon_data.get(
-            "ports", {}
-        ).get("open", [])
+        # Insert recon summary as first INFO finding
+        findings.insert(0, self._build_summary_finding())
 
-        ports_str = ", ".join([
-            f"{p['port']}/{p['service']}"
-            for p in open_ports[:10]
-        ])
-        if len(open_ports) > 10:
-            ports_str += f" (+{len(open_ports)-10} more)"
+        self._raw_findings = findings
 
-        findings.insert(0, {
-            "severity":    "INFO",
-            "title":       "Network Reconnaissance Summary",
-            "description": (
-                f"Target: {self.target} | "
-                f"IP: {dns_info.get('ip','N/A')} | "
-                f"OS: {os_info.get('os','Unknown')} | "
-                f"Open Ports: {open_count}"
-            ),
-            "evidence": f"Open ports: {ports_str}",
-            "fix": "",
-            "cve": "",
-            "cvss": "",
-            "port": None,
-            "target": self.target,
-        })
+        # ── Report generation ──────────────────────────────────────────────
+        try:
+            ReportGenerator(self.target, findings, self.report_dir).generate_all()
+        except Exception as e:
+            print(f"[!] Report generation failed: {e}")
 
-        # Generate reports
-        generator = ReportGenerator(
-            self.target, findings, self.report_dir
-        )
-        generator.generate_all()
+        # ── Format for React UI ────────────────────────────────────────────
+        self.results = [self._format_for_ui(f) for f in findings]
 
-        # Format for UI
-        self.results = [
-            self._format_for_ui(f) for f in findings
-        ]
-
+        elapsed = (datetime.now() - t0).seconds
         print(
-            f"[CYBRAIN NETWORK] Complete: "
-            f"{len(self.results)} findings"
+            f"[CYBRAIN NETWORK] Complete — "
+            f"{len(self.results)} findings in {elapsed}s"
         )
         return self.results
 
-    def _calc_overall_risk(self):
-        sevs = [r["severity"] for r in self.results]
-        for s in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
-            if s in sevs:
-                return s
+    # ── Overall risk ───────────────────────────────────────────────────────
+    def _calc_overall_risk(self) -> str:
+        """
+        Uses raw findings (most accurate).
+        Falls back to UI-formatted list if called before scan().
+        """
+        source = self._raw_findings or self.results
+        for level in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+            if any(f.get("severity") == level for f in source):
+                return level
         return "INFO"
