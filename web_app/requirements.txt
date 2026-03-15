@@ -1,0 +1,8 @@
+flask
+flask-cors
+requests
+urllib3
+gunicorn
+python-dotenv
+google-generativeai
+python-nmap

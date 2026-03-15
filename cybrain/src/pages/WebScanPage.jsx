@@ -18,31 +18,58 @@ const WebScanPage = () => {
     const [expanded, setExpanded] = useState({});
     const [aiAnalysis, setAiAnalysis] = useState('');
     const [analyzing, setAnalyzing]   = useState(false);
-    const [apiKey, setApiKey]         = useState(
-        localStorage.getItem('openrouter_key') || ''
-    );
+    const [risk, setRisk]             = useState(null);
 
     const handleScan = async () => {
         if (!url.trim()) return;
-        let clean = url.split('#')[0];
+        let clean = url.split('#')[0].trim();
         if (!clean.startsWith('http')) {
             clean = 'http://' + clean;
         }
         setLoading(true);
         setFindings([]);
         setAiAnalysis('');
+        setRisk(null);
         try {
             const { data } = await axios.post(
                 '/scan_url',
                 { url: clean },
-                { headers: {'Content-Type':'application/json'}}
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 120000  // 2 minute timeout
+                }
             );
-            const sorted = sortBySeverity(
-                data.findings || []
-            );
+            // Handle both response key formats
+            const raw = data.findings || data.results || [];
+            const sorted = sortBySeverity(raw);
             setFindings(sorted);
+            setRisk(data.risk || 'INFO');
         } catch(e) {
-            console.error(e);
+            console.error('[SCAN ERROR]', e);
+            if (e.code === 'ECONNREFUSED' || e.response?.status === 502) {
+                setFindings([{
+                    severity: 'HIGH',
+                    code: 'Backend Offline',
+                    message: (
+                        'Flask backend is not running.<br><br>' +
+                        '<strong>Fix:</strong><br>' +
+                        '1. Open terminal in web_app/ folder<br>' +
+                        '2. Run: <code>python app.py</code><br>' +
+                        '3. Verify it says "Running on port 5000"<br>' +
+                        '4. Then try scanning again'
+                    ),
+                    file: clean,
+                }]);
+            } else {
+                setFindings([{
+                    severity: 'HIGH',
+                    code: 'Scan Error',
+                    message: `Error: ${e.message}`,
+                    file: clean,
+                }]);
+            }
         } finally {
             setLoading(false);
         }
@@ -57,8 +84,7 @@ const WebScanPage = () => {
                 {
                     findings,
                     target:    url,
-                    scan_type: 'web',
-                    api_key:   apiKey,
+                    scan_type: 'web'
                 }
             );
             setAiAnalysis(data.analysis);
@@ -77,7 +103,7 @@ const WebScanPage = () => {
     return (
         <div className="min-h-screen bg-black
                         content-section pt-24 pb-16
-                        px-6 md:px-12">
+                        px-4 md:px-12">
             <div className="max-w-6xl mx-auto">
 
                 {/* Header */}
@@ -87,31 +113,31 @@ const WebScanPage = () => {
                     className="mb-10"
                 >
                     <a href="/"
-                       className="text-cyan-500/60 text-xs
+                       className="text-cyan-500/60 text-[10px]
                                   font-orbitron tracking-widest
                                   uppercase hover:text-cyan-400
-                                  transition-colors mb-4
-                                  inline-block">
+                                  transition-colors mb-6
+                                  inline-flex items-center gap-2">
                         ← Back to Home
                     </a>
                     <h1 className="font-orbitron font-black
-                                   text-4xl text-white
-                                   tracking-wider mb-2">
+                                   text-3xl md:text-5xl text-white
+                                   tracking-wider mb-3">
                         WEB <span className="text-cyan-400">
                             VULNERABILITY
                         </span> SCANNER
                     </h1>
                     <p className="text-gray-500 font-inter
-                                  text-sm">
+                                  text-xs md:text-sm max-w-2xl leading-relaxed">
                         Full OWASP Top 10 assessment with
-                        AI-powered analysis and remediation
+                        AI-powered analysis and remediation powered by Gemini 1.5.
                     </p>
                 </motion.div>
 
                 {/* Scanner Input */}
-                <div className="scanner-glass p-6 mb-6
-                                rounded-2xl">
-                    <div className="flex gap-3 mb-4">
+                <div className="scanner-glass p-4 md:p-8 mb-8
+                                rounded-3xl">
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
                         <input
                             value={url}
                             onChange={e =>
@@ -123,38 +149,38 @@ const WebScanPage = () => {
                             }
                             placeholder="https://target.com"
                             className="flex-1 bg-black/40
-                                       border border-gray-700
-                                       rounded-xl px-4 py-3
+                                       border border-white/10
+                                       rounded-2xl px-6 py-4
                                        text-gray-300 font-mono
                                        text-sm focus:outline-none
                                        focus:border-cyan-500/50
-                                       transition-all"
+                                       transition-all shadow-inner"
                         />
                         <motion.button
                             onClick={handleScan}
                             disabled={loading}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="px-8 py-3 border
-                                       border-cyan-500/50
+                            className="px-10 py-4 bg-cyan-500/10
+                                       border border-cyan-500/50
                                        text-cyan-400
                                        font-orbitron text-xs
                                        tracking-widest uppercase
-                                       rounded-xl
+                                       rounded-2xl
                                        hover:bg-cyan-500
                                        hover:text-black
                                        transition-all
                                        disabled:opacity-50"
                         >
                             {loading ? '⟳ Scanning...'
-                                     : '▶ Scan'}
+                                     : '▶ Start Scan'}
                         </motion.button>
                     </div>
 
                     {/* Quick targets */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                         <span className="text-gray-600
-                                         text-xs font-orbitron
+                                         text-[10px] font-orbitron
                                          tracking-widest
                                          uppercase">
                             Safe targets:
@@ -163,12 +189,13 @@ const WebScanPage = () => {
                             <button
                                 key={t}
                                 onClick={() => setUrl(t)}
-                                className="text-xs text-cyan-500/60
+                                className="text-[10px] text-cyan-500/60
                                            hover:text-cyan-400
-                                           font-mono transition-colors
-                                           bg-cyan-500/5
-                                           border border-cyan-500/10
-                                           px-2 py-1 rounded"
+                                           font-mono transition-all
+                                           bg-white/[0.03]
+                                           border border-white/5
+                                           px-3 py-1.5 rounded-lg
+                                           hover:bg-cyan-500/10"
                             >
                                 {t.replace('https://','')
                                   .replace('http://','')}
@@ -186,7 +213,7 @@ const WebScanPage = () => {
                         {/* Summary Cards */}
                         <div className="grid grid-cols-2
                                         md:grid-cols-5
-                                        gap-3 mb-6">
+                                        gap-4 mb-8">
                             {[
                                 ['CRITICAL','#ef4444'],
                                 ['HIGH','#f97316'],
@@ -196,10 +223,10 @@ const WebScanPage = () => {
                             ].map(([sev, color]) => (
                                 <div key={sev}
                                      className="scanner-glass
-                                                rounded-xl p-4
-                                                text-center">
+                                                rounded-2xl p-5
+                                                text-center border border-white/5">
                                     <div
-                                        className="text-2xl
+                                        className="text-3xl
                                                    font-orbitron
                                                    font-black mb-1"
                                         style={{ color }}
@@ -208,107 +235,89 @@ const WebScanPage = () => {
                                             ? findings.length
                                             : counts[sev] || 0}
                                     </div>
-                                    <div className="text-xs
+                                    <div className="text-[10px]
                                                    text-gray-500
                                                    font-orbitron
-                                                   tracking-wider">
+                                                   tracking-wider uppercase">
                                         {sev}
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        {/* AI Analysis Button */}
+                        {/* AI Analysis Block */}
                         <div className="scanner-glass
-                                        rounded-xl p-4 mb-6">
+                                        rounded-3xl p-6 md:p-8 mb-8 border border-purple-500/20">
                             <div className="flex items-center
                                             justify-between
-                                            flex-wrap gap-4">
+                                            flex-wrap gap-6 mb-6">
                                 <div>
                                     <h3 className="font-orbitron
-                                                   text-sm
-                                                   text-white
+                                                   text-base
+                                                   text-purple-400
                                                    font-bold
                                                    tracking-wider
-                                                   mb-1">
-                                        🤖 AI SECURITY ANALYSIS
+                                                   mb-2 flex items-center gap-2">
+                                        <span className="text-xl">🤖</span> AI SECURITY AUDIT
                                     </h3>
                                     <p className="text-gray-500
                                                   text-xs
                                                   font-inter">
-                                        Deep analysis by Llama 3.3
-                                        70B via OpenRouter (free)
+                                        Powered by Gemini 1.5 Flash • Contextual remediation & advice
                                     </p>
                                 </div>
-                                <div className="flex gap-3
-                                                items-center">
-                                    <input
-                                        value={apiKey}
-                                        onChange={e => {
-                                            setApiKey(
-                                                e.target.value
-                                            );
-                                            localStorage.setItem(
-                                                'openrouter_key',
-                                                e.target.value
-                                            );
-                                        }}
-                                        placeholder="sk-or-v1-..."
-                                        type="password"
-                                        className="bg-black/40
-                                                   border
-                                                   border-gray-700
-                                                   rounded-lg
-                                                   px-3 py-2
-                                                   text-gray-400
-                                                   text-xs
-                                                   font-mono
-                                                   w-48
-                                                   focus:outline-none
-                                                   focus:border-purple-500/50"
-                                    />
-                                    <button
-                                        onClick={handleAiAnalysis}
-                                        disabled={analyzing}
-                                        className="px-4 py-2
-                                                   border
-                                                   border-purple-500/50
-                                                   text-purple-400
-                                                   font-orbitron
-                                                   text-xs
-                                                   tracking-widest
-                                                   uppercase
-                                                   rounded-lg
-                                                   hover:bg-purple-500
-                                                   hover:text-black
-                                                   transition-all
-                                                   disabled:opacity-50"
-                                    >
-                                        {analyzing
-                                            ? '⟳ Analyzing...'
-                                            : '✦ Analyze'}
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={handleAiAnalysis}
+                                    disabled={analyzing}
+                                    className="px-8 py-3
+                                               bg-purple-500/10
+                                               border border-purple-500/40
+                                               text-purple-400
+                                               font-orbitron
+                                               text-xs
+                                               tracking-widest
+                                               uppercase
+                                               rounded-2xl
+                                               hover:bg-purple-500
+                                               hover:text-black
+                                               transition-all
+                                               disabled:opacity-50"
+                                >
+                                    {analyzing
+                                        ? '⟳ Analyzing...'
+                                        : '✦ Launch AI Audit'}
+                                </button>
                             </div>
-                            {aiAnalysis && (
-                                <div className="mt-4 p-4
-                                               bg-purple-500/5
-                                               border
-                                               border-purple-500/20
-                                               rounded-xl">
-                                    <pre className="text-gray-300
-                                                    text-xs
-                                                    font-inter
-                                                    whitespace-pre-wrap
-                                                    leading-relaxed">
-                                        {aiAnalysis}
-                                    </pre>
-                                </div>
-                            )}
+                            
+                            <AnimatePresence>
+                                {aiAnalysis && (
+                                    <motion.div 
+                                        initial={{ opacity:0, height:0 }}
+                                        animate={{ opacity:1, height:'auto' }}
+                                        className="mt-6 p-6
+                                                   bg-black/40
+                                                   border
+                                                   border-purple-500/20
+                                                   rounded-2xl shadow-inner">
+                                        <div className="text-gray-400
+                                                        text-sm
+                                                        font-inter
+                                                        whitespace-pre-wrap
+                                                        leading-relaxed
+                                                        prose prose-invert prose-sm">
+                                            {aiAnalysis}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* Findings List */}
-                        <div className="space-y-3">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between px-2 mb-2">
+                                <h2 className="font-orbitron text-xs text-gray-500 tracking-[0.2em] uppercase">Vulnerability Feed</h2>
+                                <span className="text-[10px] text-gray-600 font-inter tracking-wider">Sorted by Severity</span>
+                            </div>
                             {findings.map((f, i) => (
                                 <motion.div
                                     key={i}
@@ -319,18 +328,18 @@ const WebScanPage = () => {
                                         opacity:1, y:0
                                     }}
                                     transition={{
-                                        delay: i * 0.03
+                                        delay: i * 0.02
                                     }}
                                     className={`
-                                        rounded-xl overflow-hidden
-                                        border-l-4
+                                        rounded-2xl overflow-hidden
+                                        border transition-all duration-300
                                         ${f.severity==='CRITICAL'
-                                            ? 'border-red-500 bg-red-500/5'
+                                            ? 'border-red-500/30 bg-red-500/5 hover:border-red-500/50'
                                             : f.severity==='HIGH'
-                                            ? 'border-orange-500 bg-orange-500/5'
+                                            ? 'border-orange-500/30 bg-orange-500/5 hover:border-orange-500/50'
                                             : f.severity==='MEDIUM'
-                                            ? 'border-yellow-500 bg-yellow-500/5'
-                                            : 'border-green-500 bg-green-500/5'
+                                            ? 'border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/50'
+                                            : 'border-green-500/30 bg-green-500/5 hover:border-green-500/50'
                                         }
                                     `}
                                 >
@@ -341,9 +350,9 @@ const WebScanPage = () => {
                                                 [i]: !p[i]
                                             }))
                                         }
-                                        className="w-full p-4
+                                        className="w-full p-5
                                                    flex items-center
-                                                   gap-3 text-left"
+                                                   gap-4 text-left"
                                     >
                                         <SeverityBadge
                                             severity={f.severity}
@@ -356,39 +365,30 @@ const WebScanPage = () => {
                                                          flex-1">
                                             {f.code}
                                         </span>
-                                        <span className="text-gray-600
-                                                         text-xs">
-                                            {expanded[i]
-                                                ? '▲' : '▼'}
+                                        <span className={`text-xs transition-transform duration-300 ${expanded[i] ? 'rotate-180' : ''}`}>
+                                            ▼
                                         </span>
                                     </button>
                                     <AnimatePresence>
                                         {expanded[i] && (
                                             <motion.div
-                                                initial={{
-                                                    height:0,
-                                                    opacity:0
-                                                }}
-                                                animate={{
-                                                    height:'auto',
-                                                    opacity:1
-                                                }}
-                                                exit={{
-                                                    height:0,
-                                                    opacity:0
-                                                }}
-                                                className="px-4 pb-4"
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden"
                                             >
-                                                <div
-                                                    className="text-gray-400
-                                                               text-sm
-                                                               font-inter
-                                                               leading-relaxed
-                                                               whitespace-pre-wrap"
-                                                    dangerouslySetInnerHTML={{
-                                                        __html: f.message
-                                                    }}
-                                                />
+                                                <div className="px-5 pb-6 pt-2 border-t border-white/5 mt-2">
+                                                    <div
+                                                        className="text-gray-400
+                                                                   text-sm
+                                                                   font-inter
+                                                                   leading-relaxed
+                                                                   whitespace-pre-wrap"
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: f.message
+                                                        }}
+                                                    />
+                                                </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
@@ -397,20 +397,20 @@ const WebScanPage = () => {
                         </div>
 
                         {/* Export */}
-                        <div className="mt-6 flex gap-3">
+                        <div className="mt-10 flex flex-wrap gap-4">
                             <a
                                 href="/download_report"
                                 className="font-orbitron text-xs
                                            tracking-widest uppercase
-                                           px-6 py-3 border
-                                           border-cyan-500/40
-                                           text-cyan-400
+                                           px-8 py-4 bg-white/5 border
+                                           border-white/10
+                                           text-white/60
                                            hover:bg-cyan-500
-                                           hover:text-black
+                                           hover:text-black hover:border-cyan-500
                                            transition-all
-                                           rounded-xl"
+                                           rounded-2xl"
                             >
-                                Export Report →
+                                Download PDF Report →
                             </a>
                         </div>
                     </motion.div>

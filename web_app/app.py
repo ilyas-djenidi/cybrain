@@ -1,142 +1,194 @@
-from flask import Flask, render_template, request, jsonify, send_file
-from flask_cors import CORS
-import sys
-import os
-import base64
-from dotenv import load_dotenv
-from ai_agent import CybrainAgent
-from code_analyzer import CodeAnalyzer
+"""
+CYBRAIN — Flask Backend
+PFE Master 2 — Information Security
+"""
 
-# Load environment variables
+import os
+import sys
+import traceback
+import tempfile
+
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+from dotenv import load_dotenv
+
+# Load .env FIRST before any other imports
 load_dotenv()
 
-# Add parent directory to path to import detector
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from detect_apache_misconf import ApacheMisconfigDetector
+# Add web_app directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins — frontend may be hosted on Netlify/Vercel
+CORS(app, origins="*")
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# ── TEST ROUTE ────────────────────────────────────────────────
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({
+        "status": "ok",
+        "gemini": bool(os.environ.get("GEMINI_API_KEY")),
+        "message": "Cybrain backend running"
+    })
 
+# ── APACHE CONFIG ANALYSIS ────────────────────────────────────
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    content = None
-    source_name = "Input Text"
+    try:
+        from detect_apache_misconf import ApacheMisconfigDetector
+        detector = ApacheMisconfigDetector()
+        content     = None
+        source_name = "Input Text"
 
-    if 'file' in request.files:
-        file = request.files['file']
-        if file.filename != '':
-            content = file.read().decode('utf-8', errors='ignore')
-            source_name = file.filename
-    
-    if content is None:
-        data = request.get_json()
-        if data and 'content' in data:
-            content = data['content']
+        if 'file' in request.files:
+            f = request.files['file']
+            if f and f.filename:
+                content     = f.read().decode('utf-8', errors='ignore')
+                source_name = f.filename
+        
+        if content is None and request.is_json:
+            data = request.get_json(force=True) or {}
+            content = data.get('content') or data.get('config', '')
+        
+        if content is None:
+            return jsonify({'error': 'No content provided'}), 400
 
-    if not content:
-        return jsonify({'error': 'No content provided'}), 400
+        detector.scan_content(content.strip(), source_name)
+        raw = detector.get_results()
 
-    detector = ApacheMisconfigDetector()
-    detector.scan_content(content, source_name)
-    results = detector.get_results()
+        # Normalize severity
+        SEV_MAP = {
+            'error':   'CRITICAL', 'Error':   'CRITICAL',
+            'high':    'HIGH',     'High':    'HIGH',
+            'warning': 'MEDIUM',   'Warning': 'MEDIUM',
+            'medium':  'MEDIUM',   'Medium':  'MEDIUM',
+            'low':     'LOW',      'Low':     'LOW',
+            'info':    'INFO',     'Info':    'INFO',
+        }
+        results = []
+        for m in raw:
+            sev = SEV_MAP.get(
+                str(m.get('severity', 'Info')),
+                str(m.get('severity', 'Info')).upper()
+            )
+            results.append({
+                "severity": sev,
+                "line":     str(m.get('line', '-')),
+                "message":  m.get('message', ''),
+                "code":     m.get('code', ''),
+                "file":     str(m.get('file', source_name)),
+            })
 
-    return jsonify({'results': results})
+        # Overall risk
+        sevs = [r['severity'] for r in results]
+        risk = next(
+            (s for s in ['CRITICAL','HIGH','MEDIUM','LOW']
+             if s in sevs), 'INFO'
+        )
 
+        return jsonify({
+            'findings': results,
+            'results':  results,  # backwards compat
+            'total':    len(results),
+            'risk':     risk,
+        })
+
+    except Exception as e:
+        print(f"[ANALYZE ERROR]\n{traceback.format_exc()}")
+        return jsonify({
+            'error':    str(e),
+            'findings': [],
+            'total':    0
+        }), 500
+
+
+# ── WEB VULNERABILITY SCAN ────────────────────────────────────
 @app.route('/scan_url', methods=['POST'])
 def scan_url():
-    import traceback
     try:
         data = request.get_json(force=True)
         if not data:
-            return jsonify({"error": "No JSON data received"}), 400
-        
+            return jsonify({"error": "No JSON received"}), 400
+
         url = data.get('url', '').strip()
         if not url:
             return jsonify({"error": "No URL provided"}), 400
-        
-        # Add http:// if missing
+
+        # Clean URL
         if not url.startswith(('http://', 'https://')):
             url = 'http://' + url
-        
-        # Strip fragments that break requests
         url = url.split('#')[0].rstrip('/')
-        
-        print(f"[SCANNER] Starting scan on: {url}")
-        
+
+        print(f"[SCAN_URL] Scanning: {url}")
+
         from url_scanner import UrlScanner
         scanner = UrlScanner(url)
         results = scanner.scan()
-        
-        # Calculate risk based on worst severity found
-        risk = "INFO"
-        if len(results) > 0:
-            if hasattr(scanner, '_calc_overall_risk'):
-                 risk = scanner._calc_overall_risk()
-            else:
-                sevs = [r.get("severity", "INFO") for r in results]
-                for s in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
-                    if s in sevs:
-                        risk = s
-                        break
-        
-        print(f"[SCANNER] Done. Found {len(results)} issues. Risk: {risk}")
-        
+
+        # Ensure results is always a list
+        if not isinstance(results, list):
+            results = []
+
+        risk = scanner._calc_overall_risk()
+
         return jsonify({
-            "results": results,
-            "total": len(results),
-            "url": url,
-            "risk": risk
+            "findings": results,
+            "results":  results,  # backwards compat
+            "total":    len(results),
+            "url":      url,
+            "risk":     risk,
         })
-        
+
     except Exception as e:
-        print(f"[SCANNER ERROR] {traceback.format_exc()}")
+        print(f"[SCAN_URL ERROR]\n{traceback.format_exc()}")
+        url_safe = ''
+        try:
+            url_safe = request.get_json(force=True).get('url','')
+        except Exception:
+            pass
         return jsonify({
-            "results": [{
+            "findings": [{
                 "severity": "HIGH",
-                "line": "-",
-                "message": f"Scanner error: {str(e)}\n\n"
-                           f"<strong>Recommendation:</strong><br>"
-                           f"Check the Flask console for the full error.",
+                "line":     "-",
+                "message":  (
+                    f"Scanner error: {str(e)}<br><br>"
+                    "<strong>Recommendation:</strong><br>"
+                    "Check Flask console for details."
+                ),
                 "code": "Scanner Error",
-                "file": data.get('url', 'unknown') if data else 'unknown'
+                "file": url_safe,
             }],
-            "total": 1
+            "total": 1,
+            "risk":  "HIGH",
         }), 200
 
-@app.route('/download_report')
-def download_report():
-    try:
-        return send_file('../report/vulnerability_report.md', as_attachment=True)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 404
 
-from network_scanner import NetworkScanner
-
+# ── NETWORK SCAN ──────────────────────────────────────────────
 @app.route('/scan_network', methods=['POST'])
 def scan_network():
     try:
-        data = request.get_json(force=True)
-        if not data:
-            return jsonify({"error": "No data"}), 400
-
+        data = request.get_json(force=True) or {}
         target = data.get('target', '').strip()
         if not target:
             return jsonify({"error": "No target"}), 400
 
-        print(f"[APP] Network scan: {target}")
+        # Clean target
+        for prefix in ['https://', 'http://']:
+            if target.startswith(prefix):
+                target = target[len(prefix):]
+        target = target.split('/')[0].split(':')[0]
+
+        print(f"[SCAN_NETWORK] Target: {target}")
+
+        from network_scanner import NetworkScanner
         scanner = NetworkScanner(target)
         results = scanner.scan()
 
         return jsonify({
-            "findings": results,
-            "total":    len(results),
-            "target":   target,
-            "risk":     scanner._calc_overall_risk(),
-            "recon":    {
+            "findings":   results,
+            "total":      len(results),
+            "target":     target,
+            "risk":       scanner._calc_overall_risk(),
+            "recon": {
                 "ip": scanner.recon_data.get(
                     "dns", {}
                 ).get("ip"),
@@ -150,100 +202,75 @@ def scan_network():
         })
 
     except Exception as e:
-        import traceback
-        print(f"[APP ERROR] {traceback.format_exc()}")
+        print(f"[SCAN_NETWORK ERROR]\n{traceback.format_exc()}")
         return jsonify({
             "findings": [{
                 "severity": "HIGH",
                 "line":     "-",
                 "message":  f"Network scan error: {str(e)}",
                 "code":     "Scanner Error",
-                "file":     target if 'target' in locals()
-                            else "unknown"
+                "file":     data.get('target', ''),
             }],
-            "total": 1
+            "total": 1,
         }), 200
 
 
-# ── AI CHATBOT ──────────────────────────────────────────────
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    try:
-        data    = request.get_json(force=True)
-        message = data.get('message', '').strip()
-        context = data.get('context', {})
-        api_key = data.get('api_key', '')
-
-        if not message:
-            return jsonify({"error": "No message"}), 400
-
-        agent    = CybrainAgent(api_key or None)
-        response = agent.chat(message, context)
-
-        return jsonify({
-            "response": response,
-            "model":    "llama-3.3-70b (OpenRouter)"
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# ── CODE FILE ANALYSIS ──────────────────────────────────────
+# ── CODE ANALYSIS ─────────────────────────────────────────────
 @app.route('/analyze_code', methods=['POST'])
 def analyze_code():
     try:
-        api_key  = request.form.get('api_key', '')
-        analyzer = CodeAnalyzer(api_key or None)
+        from code_analyzer import CodeAnalyzer
+        analyzer = CodeAnalyzer()
+        content  = None
+        filename = 'code.txt'
 
         if 'file' in request.files:
-            file     = request.files['file']
-            filename = file.filename
-            content  = file.read().decode(
-                'utf-8', errors='ignore'
-            )
+            f        = request.files['file']
+            filename = f.filename or 'code.txt'
+            content  = f.read().decode('utf-8', errors='ignore')
         elif request.is_json:
-            data     = request.get_json(force=True)
+            data     = request.get_json(force=True) or {}
             content  = data.get('code', '')
             filename = data.get('filename', 'code.txt')
-            api_key  = data.get('api_key', '')
-            analyzer = CodeAnalyzer(api_key or None)
-        else:
-            return jsonify({"error": "No code provided"}),400
 
-        if not content.strip():
+        if not content or not content.strip():
             return jsonify({"error": "Empty file"}), 400
 
         result = analyzer.analyze(content, filename)
 
         return jsonify({
-            "findings":    result["ui_findings"],
-            "total":       len(result["ui_findings"]),
-            "language":    result["language"],
-            "lines":       result["lines_of_code"],
-            "ai_analysis": result["ai_analysis"],
-            "can_fix":     result["fix_supported"],
+            "findings":    result.get("ui_findings", []),
+            "total":       len(result.get("ui_findings", [])),
+            "language":    result.get("language", "Unknown"),
+            "lines":       result.get("lines_of_code", 0),
+            "ai_analysis": result.get("ai_analysis"),
+            "can_fix":     result.get("fix_supported", False),
             "filename":    filename,
         })
+
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        print(f"[ANALYZE_CODE ERROR]\n{traceback.format_exc()}")
+        return jsonify({
+            "error":    str(e),
+            "findings": [],
+            "total":    0,
+        }), 500
 
 
-# ── FIX CODE ────────────────────────────────────────────────
+# ── FIX CODE ──────────────────────────────────────────────────
 @app.route('/fix_code', methods=['POST'])
 def fix_code():
     try:
-        data     = request.get_json(force=True)
+        from ai_agent import CybrainAgent
+        data     = request.get_json(force=True) or {}
         content  = data.get('code', '')
         filename = data.get('filename', 'code.txt')
-        api_key  = data.get('api_key', '')
-        issue    = data.get('specific_issue', None)
 
-        analyzer = CodeAnalyzer(api_key or None)
-        result   = analyzer.fix_code(
-            content, filename
-        )
+        if not content.strip():
+            return jsonify({"error": "No code provided"}), 400
+
+        agent  = CybrainAgent()
+        result = agent.fix_code(content, filename)
 
         return jsonify({
             "fixed_code":  result.get("fixed_code"),
@@ -251,67 +278,165 @@ def fix_code():
             "filename":    filename,
             "can_download":bool(result.get("fixed_code")),
         })
+
     except Exception as e:
+        print(f"[FIX_CODE ERROR]\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
 
-# ── FIX APACHE CONFIG ───────────────────────────────────────
+# ── FIX APACHE CONFIG ─────────────────────────────────────────
 @app.route('/fix_config', methods=['POST'])
 def fix_config():
     try:
-        data     = request.get_json(force=True)
+        from ai_agent import CybrainAgent
+        data     = request.get_json(force=True) or {}
         config   = data.get('config', '')
         findings = data.get('findings', [])
-        api_key  = data.get('api_key', '')
 
-        agent  = CybrainAgent(api_key or None)
-        result = agent.fix_apache_config(
-            config, findings
-        )
+        if not config.strip():
+            return jsonify({"error": "No config provided"}), 400
+
+        agent  = CybrainAgent()
+        result = agent.fix_apache_config(config, findings)
 
         return jsonify({
             "fixed_config": result.get("fixed_config"),
             "explanation":  result.get("explanation"),
-            "can_download": bool(
-                result.get("fixed_config")
-            ),
+            "can_download": bool(result.get("fixed_config")),
         })
+
     except Exception as e:
+        print(f"[FIX_CONFIG ERROR]\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
 
-# ── AI FINDINGS ANALYSIS ────────────────────────────────────
+# ── AI CHAT ───────────────────────────────────────────────────
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        from ai_agent import CybrainAgent
+        data    = request.get_json(force=True) or {}
+        message = data.get('message', '').strip()
+        context = data.get('context', {})
+
+        if not message:
+            return jsonify({"error": "No message"}), 400
+
+        agent    = CybrainAgent()
+        response = agent.chat(message, context)
+
+        return jsonify({
+            "response": response,
+            "model":    "Gemini 1.5 Flash"
+        })
+
+    except Exception as e:
+        print(f"[CHAT ERROR]\n{traceback.format_exc()}")
+        return jsonify({
+            "response": f"AI error: {str(e)}",
+            "model":    "error"
+        }), 200
+
+
+# ── AI FINDINGS ANALYSIS ──────────────────────────────────────
 @app.route('/api/analyze_findings', methods=['POST'])
 def analyze_findings():
     try:
-        data      = request.get_json(force=True)
+        from ai_agent import CybrainAgent
+        data      = request.get_json(force=True) or {}
         findings  = data.get('findings', [])
         target    = data.get('target', '')
         scan_type = data.get('scan_type', 'web')
-        api_key   = data.get('api_key', '')
 
-        agent  = CybrainAgent(api_key or None)
+        agent  = CybrainAgent()
         result = agent.analyze_findings(
             findings, target, scan_type
         )
 
         return jsonify({"analysis": result})
+
+    except Exception as e:
+        print(f"[ANALYZE_FINDINGS ERROR]\n{traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ── DOWNLOAD REPORT ───────────────────────────────────────────
+@app.route('/download_report', methods=['GET'])
+def download_report():
+    try:
+        # Try multiple paths
+        paths = [
+            os.path.join(
+                os.path.dirname(
+                    os.path.dirname(os.path.abspath(__file__))
+                ),
+                "report", "vulnerability_report.md"
+            ),
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..", "report", "vulnerability_report.md"
+            ),
+            "report/vulnerability_report.md",
+        ]
+        for path in paths:
+            if os.path.exists(path):
+                return send_file(
+                    os.path.abspath(path),
+                    as_attachment=True,
+                    download_name="vulnerability_report.md"
+                )
+
+        # If no report exists, create a placeholder
+        placeholder = (
+            "# Vulnerability Report\n\n"
+            "No scan has been run yet.\n"
+            "Run a scan first then export.\n"
+        )
+        tmp = tempfile.NamedTemporaryFile(
+            mode='w', suffix='.md',
+            delete=False, encoding='utf-8'
+        )
+        tmp.write(placeholder)
+        tmp.close()
+        return send_file(
+            tmp.name,
+            as_attachment=True,
+            download_name="vulnerability_report.md"
+        )
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# ── DOWNLOAD FIXED FILE ─────────────────────────────────────
-@app.route('/download_fixed/<filename>')
+# ── DOWNLOAD FIXED FILE ───────────────────────────────────────
+@app.route('/download_fixed/<filename>', methods=['GET'])
 def download_fixed(filename):
-    fixed_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "fixed_files", filename
-    )
-    if os.path.exists(fixed_path):
-        return send_file(fixed_path, as_attachment=True)
-    return jsonify({"error": "File not found"}), 404
+    try:
+        fixed_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "fixed_files"
+        )
+        path = os.path.join(fixed_dir, filename)
+        if os.path.exists(path):
+            return send_file(
+                path,
+                as_attachment=True,
+                download_name=filename
+            )
+        return jsonify({"error": "File not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
+# ── MAIN ──────────────────────────────────────────────────────
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
-
+    print("=" * 50)
+    print("CYBRAIN Backend Starting...")
+    print(f"Gemini API Key: {'SET' if os.environ.get('GEMINI_API_KEY') else 'NOT SET'}")
+    print("=" * 50)
+    app.run(
+        debug=True,
+        host='0.0.0.0',
+        port=5000,
+        use_reloader=True
+    )

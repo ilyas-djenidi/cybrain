@@ -1,444 +1,416 @@
-o2`1234567*()_+---*2rqeejke22[[1o=101=1k1k=`[[w1w1w1w1[wpw1pw1p-22p=[2[`[w[[w    0
+"""
 CYBRAIN — AI Security Agent
-Uses OpenRouter FREE models (Llama 3.3 70B)
-Analyzes vulnerabilities and generates fixes
+Powered by Google Gemini 1.5 Flash (Free tier)
+PFE Master 2 — Information Security
 """
 
-import requests
-import json
-import re
 import os
+import re
+import json
+from dotenv import load_dotenv
 
-OPENROUTER_API_URL = (
-    "https://openrouter.ai/api/v1/chat/completions"
-)
+load_dotenv()
 
-# Best free model with most tokens
-FREE_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
-FALLBACK_MODEL = "deepseek/deepseek-r1:free"
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
 
-SYSTEM_PROMPT = """You are Cybrain AI — an expert cybersecurity
-analyst and penetration tester with 15 years of experience.
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+SYSTEM_PROMPT = """You are Cybrain AI — an expert 
+cybersecurity analyst and penetration tester with 
+15 years of experience in web security, network 
+security, and secure code review.
 
 Your capabilities:
-1. Analyze code files for vulnerabilities (SQLi, XSS, RCE, etc.)
-2. Analyze Apache configurations for misconfigurations
-3. Explain network vulnerabilities clearly
-4. Generate detailed fix recommendations
-5. Actually FIX the vulnerable code/config when asked
-6. Answer security questions in the context of findings
+1. Analyze vulnerability scan findings deeply
+2. Explain security issues in clear language
+3. Provide concrete step-by-step fixes
+4. Analyze code files for security flaws
+5. Fix vulnerable code and configurations
+6. Analyze network scan findings
 
-When analyzing findings:
+Always:
+- Reference CVE/CWE numbers when relevant
+- Give copy-paste ready fix examples
+- Prioritize by severity: CRITICAL > HIGH > MEDIUM > LOW
 - Be specific about line numbers and exact issues
-- Explain the real-world impact
-- Provide concrete, copy-paste ready fixes
-- Reference CVEs and CWE numbers
-- Prioritize by severity: CRITICAL → HIGH → MEDIUM → LOW
+- Explain real-world attack impact clearly
 
 When fixing code/configs:
-- Return the COMPLETE fixed file
+- Return the COMPLETE fixed version
 - Add security comments explaining each fix
 - Never break existing functionality
-- Follow security best practices (OWASP, CIS Benchmarks)
-
-Response format for fixes:
-Always wrap fixed code in: ```fixed\n...\n```
-Always wrap explanations in clear sections.
-
-You are integrated into the Cybrain security platform
-for Master's thesis research (PFE) in Information Security."""
+- Follow OWASP and CIS Benchmark guidelines"""
 
 
 class CybrainAgent:
 
-    def __init__(self, api_key=None):
-        self.api_key = (
-            api_key or
-            os.environ.get("OPENROUTER_API_KEY", "")
+    def __init__(self):
+        self.model = None
+        self.chat_session = None
+        self.current_context = {}
+        self._init_gemini()
+
+    def _init_gemini(self):
+        """Initialize Gemini model."""
+        if not GEMINI_AVAILABLE:
+            print(
+                "[AI] google-generativeai not installed. "
+                "Run: pip install google-generativeai"
+            )
+            return
+        if not GEMINI_API_KEY:
+            print(
+                "[AI] No GEMINI_API_KEY in environment"
+            )
+            return
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+            self.model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                system_instruction=SYSTEM_PROMPT,
+                generation_config={
+                    "temperature":     0.3,
+                    "max_output_tokens": 8192,
+                    "top_p":           0.95,
+                }
+            )
+            print("[AI] Gemini 1.5 Flash initialized [OK]")
+        except Exception as e:
+            print(f"[AI] Gemini init error: {e}")
+            self.model = None
+
+    def _call(self, prompt, use_chat=False):
+        """Call Gemini API with fallback."""
+        if not self.model:
+            return self._offline_response()
+        try:
+            if use_chat and self.chat_session:
+                response = self.chat_session.send_message(
+                    prompt
+                )
+            else:
+                response = self.model.generate_content(
+                    prompt
+                )
+            return response.text
+        except Exception as e:
+            error_str = str(e)
+            if "quota" in error_str.lower():
+                return (
+                    "⚠️ Gemini API quota reached. "
+                    "Please wait a moment and try again. "
+                    "Free tier: 15 requests/minute."
+                )
+            return f"AI error: {error_str}"
+
+    def _offline_response(self):
+        return (
+            "⚠️ AI Agent offline.\n\n"
+            "Check that GEMINI_API_KEY is set in "
+            "your .env file and "
+            "google-generativeai is installed:\n"
+            "pip install google-generativeai"
         )
-        self.conversation_history = []
+
+    def start_chat(self):
+        """Start a new Gemini chat session."""
+        if self.model:
+            self.chat_session = self.model.start_chat(
+                history=[]
+            )
+
+    def reset_chat(self):
+        """Reset chat history."""
+        self.chat_session = None
         self.current_context = {}
 
-    def _call_api(self, messages, model=FREE_MODEL,
-                  max_tokens=4096):
-        """Call OpenRouter API."""
-        if not self.api_key:
-            return self._offline_response(messages)
+    # ── CHATBOT ─────────────────────────────────────────────
+    def chat(self, user_message, context=None):
+        """Security chatbot with conversation memory."""
+        if not self.chat_session:
+            self.start_chat()
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type":  "application/json",
-            "HTTP-Referer":  "https://cybrain.security",
-            "X-Title":       "Cybrain Security Platform",
-        }
-        payload = {
-            "model":       model,
-            "messages":    messages,
-            "max_tokens":  max_tokens,
-            "temperature": 0.3,
-        }
-        try:
-            resp = requests.post(
-                OPENROUTER_API_URL,
-                headers=headers,
-                json=payload,
-                timeout=60
+        # Inject context on first message
+        if context and context != self.current_context:
+            self.current_context = context
+            ctx = (
+                f"[SCAN CONTEXT]\n"
+                f"Target: {context.get('target','')}\n"
+                f"Total findings: "
+                f"{context.get('total', 0)}\n"
+                f"Overall risk: "
+                f"{context.get('risk','')}\n"
+                f"Scan type: "
+                f"{context.get('scan_type','web')}\n"
+                f"[USER MESSAGE]\n{user_message}"
             )
-            data = resp.json()
-            if "choices" in data:
-                return data["choices"][0]["message"][
-                    "content"
-                ]
-            elif "error" in data:
-                # Try fallback model
-                payload["model"] = FALLBACK_MODEL
-                resp2 = requests.post(
-                    OPENROUTER_API_URL,
-                    headers=headers,
-                    json=payload,
-                    timeout=60
-                )
-                data2 = resp2.json()
-                if "choices" in data2:
-                    return data2["choices"][0]["message"][
-                        "content"
-                    ]
-            return "AI service temporarily unavailable."
-        except Exception as e:
-            return f"Connection error: {str(e)}"
+            return self._call(ctx, use_chat=True)
 
-    def _offline_response(self, messages):
-        """Fallback when no API key configured."""
-        last = messages[-1]["content"]
-        return (
-            "⚠️ AI Agent requires OpenRouter API key.\n\n"
-            "Get your free key at: "
-            "https://openrouter.ai/keys\n\n"
-            "Add to .env file:\n"
-            "OPENROUTER_API_KEY=sk-or-v1-..."
-        )
+        return self._call(user_message, use_chat=True)
 
+    # ── FINDINGS ANALYSIS ────────────────────────────────────
     def analyze_findings(self, findings, target,
                          scan_type="web"):
-        """
-        AI analyzes scan findings and provides
-        deep security insights.
-        """
+        """Deep AI analysis of scan findings."""
         if not findings:
             return "No findings to analyze."
 
-        # Build findings summary
         findings_text = ""
         for i, f in enumerate(findings[:20], 1):
             sev  = f.get("severity", "INFO")
             code = f.get("code", f.get("title", ""))
-            msg  = f.get("message", f.get("description", ""))
-            # Strip HTML tags
-            msg = re.sub(r'<[^>]+>', '', msg)
+            msg  = re.sub(
+                r'<[^>]+>', '',
+                f.get("message",
+                      f.get("description", ""))
+            )[:300]
             findings_text += (
                 f"\n{i}. [{sev}] {code}\n"
-                f"   {msg[:300]}\n"
+                f"   {msg}\n"
             )
 
         prompt = f"""
-I ran a {scan_type} security scan on: {target}
-Found {len(findings)} vulnerabilities:
+Cybersecurity assessment for: {target}
+Scan type: {scan_type}
+Total findings: {len(findings)}
+
 {findings_text}
 
-Please provide:
-1. EXECUTIVE SUMMARY (2-3 sentences for a manager)
-2. CRITICAL RISK ANALYSIS (what can be attacked right now)
-3. ATTACK CHAIN (how an attacker would chain these vulns)
-4. TOP 3 FIXES (most impactful, prioritized)
-5. COMPLIANCE IMPACT (GDPR, PCI-DSS, ISO 27001)
+Provide a professional security report with:
+
+## 1. EXECUTIVE SUMMARY
+2-3 sentences suitable for a non-technical manager.
+
+## 2. CRITICAL RISK ANALYSIS
+What can be actively exploited right now?
+What is the immediate business impact?
+
+## 3. ATTACK CHAIN SCENARIO
+How would a real attacker chain these vulnerabilities?
+Step by step attack narrative.
+
+## 4. TOP 5 PRIORITY FIXES
+Most impactful fixes ordered by priority.
+Include specific commands/code examples.
+
+## 5. COMPLIANCE IMPACT
+Impact on: GDPR, PCI-DSS, ISO 27001, HIPAA
+
+## 6. SECURITY SCORE
+Rate overall security: X/100
+Justify the score.
 """
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": prompt}
-        ]
-        return self._call_api(messages)
+        return self._call(prompt)
 
-    def analyze_code_file(self, code_content,
-                          filename, language=None):
-        """
-        Deep code vulnerability analysis.
-        Returns findings + optional fix.
-        """
-        # Detect language
-        if not language:
-            ext = filename.split(".")[-1].lower()
-            lang_map = {
-                "py":   "Python",
-                "php":  "PHP",
-                "js":   "JavaScript",
-                "ts":   "TypeScript",
-                "java": "Java",
-                "cs":   "C#",
-                "rb":   "Ruby",
-                "go":   "Go",
-                "cpp":  "C++",
-                "c":    "C",
-                "sql":  "SQL",
-            }
-            language = lang_map.get(ext, "Unknown")
-
+    # ── CODE ANALYSIS ────────────────────────────────────────
+    def analyze_code_file(self, content, filename,
+                          language=None):
+        """Deep vulnerability analysis of code file."""
+        lang = language or self._detect_lang(filename)
         prompt = f"""
-Analyze this {language} code file for security vulnerabilities.
-Filename: {filename}
-```{language.lower()}
-{code_content[:8000]}
+Perform a comprehensive security code review.
+File: {filename}
+Language: {lang}
+```{lang.lower() if lang else ''}
+{content[:8000]}
 ```
 
-Provide a DETAILED security audit:
+Provide a detailed security audit:
 
-## VULNERABILITIES FOUND
-For each vulnerability:
-- Line number(s)
-- Severity: CRITICAL/HIGH/MEDIUM/LOW
-- Vulnerability type (CWE number)
-- Description of the issue
-- How an attacker would exploit it
-- CVSS score estimate
+## VULNERABILITY FINDINGS
+For each issue found:
+| # | Line | Severity | Type | CWE | Description |
+List all vulnerabilities in this table format.
 
-## QUICK WINS
-Security issues that can be fixed in < 5 minutes
+## DETAILED ANALYSIS
+For each CRITICAL and HIGH finding:
+- Exact location (line number)
+- How an attacker exploits it
+- Proof of concept attack
+- CVSS score
 
 ## SECURITY SCORE
-Rate this code 0-100 for security quality
+Rate this code: X/100
 
-## FIX RECOMMENDATION
-Would you like me to fix this code?
-I can provide a complete secured version.
+## QUICK WINS
+Issues fixable in under 5 minutes each.
+
+## SHOULD I FIX IT?
+Clearly state: "Yes, I can generate a complete 
+fixed version of this file."
 """
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": prompt}
-        ]
-        result = self._call_api(
-            messages, max_tokens=6000
-        )
-        # Store context for follow-up
+        result = self._call(prompt)
         self.current_context = {
             "type":     "code",
             "filename": filename,
-            "language": language,
-            "content":  code_content,
-            "analysis": result,
+            "language": lang,
+            "content":  content,
         }
-        self.conversation_history = [
-            {"role": "system",    "content": SYSTEM_PROMPT},
-            {"role": "user",      "content": prompt},
-            {"role": "assistant", "content": result},
-        ]
+        # Start fresh chat with code context
+        if self.model:
+            self.chat_session = self.model.start_chat(
+                history=[
+                    {
+                        "role": "user",
+                        "parts": [prompt]
+                    },
+                    {
+                        "role": "model",
+                        "parts": [result]
+                    },
+                ]
+            )
         return result
 
-    def fix_code(self, code_content=None,
-                 filename=None, language=None,
-                 specific_issue=None):
-        """
-        Generate a complete fixed version of the code.
-        Returns the fixed file content.
-        """
-        # Use stored context if available
-        if not code_content and self.current_context:
-            code_content = self.current_context.get(
-                "content", ""
-            )
-            filename = self.current_context.get(
-                "filename", "file"
-            )
-            language = self.current_context.get(
-                "language", "Unknown"
-            )
+    def _detect_lang(self, filename):
+        ext = filename.split(".")[-1].lower()
+        return {
+            "py": "Python", "php": "PHP",
+            "js": "JavaScript", "ts": "TypeScript",
+            "java": "Java", "cs": "C#",
+            "rb": "Ruby", "go": "Go",
+            "cpp": "C++", "c": "C",
+            "sql": "SQL", "jsx": "JavaScript",
+            "tsx": "TypeScript",
+            "conf": "Apache Config",
+            "htaccess": "Apache Config",
+        }.get(ext, "Unknown")
 
-        issue_context = ""
-        if specific_issue:
-            issue_context = (
-                f"Focus on fixing: {specific_issue}\n"
-            )
-
+    # ── CODE FIX ─────────────────────────────────────────────
+    def fix_code(self, content, filename,
+                 language=None):
+        """Generate complete secured version of code."""
+        lang = language or self._detect_lang(filename)
         prompt = f"""
-{issue_context}
-Please provide the COMPLETE FIXED version of this
-{language} file with ALL security vulnerabilities resolved.
+Generate the COMPLETE FIXED and SECURED version of 
+this {lang} file.
 
 Original file: {filename}
-```{language.lower() if language else ''}
-{code_content[:8000]}
+```{lang.lower() if lang else ''}
+{content[:8000]}
 ```
 
 Requirements:
-1. Fix ALL identified security issues
-2. Add security comments for each fix
-3. Do NOT break existing functionality
-4. Follow OWASP secure coding guidelines
-5. Use parameterized queries for SQL
-6. Sanitize all user inputs
-7. Add proper error handling
-8. Return ONLY the complete fixed code
+1. Fix ALL security vulnerabilities
+2. Add security comment for EVERY fix
+3. Do NOT change functionality
+4. Follow OWASP Secure Coding Guidelines
+5. Use parameterized queries for all SQL
+6. Sanitize/validate all user inputs
+7. Use strong cryptography (bcrypt, SHA-256)
+8. Add proper error handling
 
-Wrap the fixed code in: ```fixed
-[complete fixed code here]
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+
+## CHANGES MADE
+List every security fix with line references.
+
+## FIXED CODE
+```{lang.lower() if lang else 'text'}
+[COMPLETE FIXED FILE HERE - no truncation]
 ```
 
-After the code, list every change made with line refs.
+## SECURITY IMPROVEMENTS SUMMARY
+Brief summary of all security improvements.
 """
-        if self.conversation_history:
-            # Continue conversation
-            self.conversation_history.append(
-                {"role": "user", "content": prompt}
-            )
-            result = self._call_api(
-                self.conversation_history,
-                max_tokens=8000
-            )
-            self.conversation_history.append(
-                {"role": "assistant", "content": result}
-            )
+        if self.chat_session:
+            result = self._call(prompt, use_chat=True)
         else:
-            messages = [
-                {"role": "system",
-                 "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
-            ]
-            result = self._call_api(
-                messages, max_tokens=8000
-            )
+            result = self._call(prompt)
 
-        # Extract fixed code
-        fixed_match = re.search(
-            r'```fixed\n(.*?)\n```',
-            result, re.DOTALL
+        # Extract fixed code block
+        pattern = (
+            rf'```{re.escape(lang.lower() if lang else "")}'
+            r'?\n(.*?)\n```'
         )
-        if fixed_match:
-            fixed_code = fixed_match.group(1)
-        else:
-            # Try generic code block
-            code_match = re.search(
-                r'```(?:\w+)?\n(.*?)\n```',
+        match = re.search(pattern, result, re.DOTALL)
+        if not match:
+            match = re.search(
+                r'```\w*\n(.*?)\n```',
                 result, re.DOTALL
-            )
-            fixed_code = (
-                code_match.group(1)
-                if code_match else None
             )
 
         return {
             "explanation": result,
-            "fixed_code":  fixed_code,
+            "fixed_code":  match.group(1) if match else None,
             "filename":    filename,
-            "language":    language,
+            "language":    lang,
         }
 
+    # ── APACHE CONFIG FIX ────────────────────────────────────
     def fix_apache_config(self, config_content,
                           findings):
-        """
-        Fix Apache misconfiguration automatically.
-        Returns fixed httpd.conf content.
-        """
-        findings_text = "\n".join([
+        """Fix Apache misconfiguration automatically."""
+        issues = "\n".join([
             f"- [{f.get('severity','')}] "
             f"{f.get('code','')}: "
-            f"{re.sub(r'<[^>]+>', '', f.get('message',''))[:150]}"
-            for f in findings[:15]
+            f"{re.sub(r'<[^>]+>','',f.get('message',''))[:150]}"
+            for f in findings[:20]
         ])
 
         prompt = f"""
-Fix this Apache configuration file.
-These misconfigurations were detected:
-{findings_text}
+Fix this Apache configuration. These issues were found:
 
-Original Apache config:
+{issues}
+
+Original config:
 ```apache
 {config_content[:6000]}
 ```
 
-Provide the COMPLETE FIXED Apache configuration.
-Fix ALL issues:
-1. Replace deprecated Order/Allow/Deny with Require
-2. Disable directory listing (Options -Indexes)
-3. Add all missing security headers
-4. Fix SSL/TLS to use TLSv1.2+ only
-5. Add strong cipher suites
-6. Set ServerTokens Prod + ServerSignature Off
-7. Add TraceEnable Off
-8. Set LimitRequestBody 10485760
-9. Set Timeout 300
-10. Fix ProxyPass placement (move outside Directory)
-11. Fix all syntax errors
-12. Add SymLinksIfOwnerMatch where needed
+Generate the COMPLETE FIXED Apache configuration.
 
-Wrap the fixed config in: ```fixed
-[complete fixed apache config]
+Apply ALL these fixes:
+1. Replace all Order/Allow/Deny with Require directives
+2. Disable directory listing: Options -Indexes
+3. Add security headers:
+   Header always set Content-Security-Policy "default-src 'self'"
+   Header always set X-Frame-Options "DENY"
+   Header always set X-Content-Type-Options "nosniff"
+   Header always set Strict-Transport-Security "max-age=31536000"
+   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+4. Fix SSL: SSLProtocol -all +TLSv1.2 +TLSv1.3
+5. Strong ciphers: SSLCipherSuite ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
+6. Add: ServerTokens Prod + ServerSignature Off
+7. Add: TraceEnable Off
+8. Fix: LimitRequestBody 10485760
+9. Fix: Timeout 300
+10. Move ProxyPass outside Directory blocks
+11. Fix all syntax errors
+12. Add SymLinksIfOwnerMatch
+
+FORMAT EXACTLY:
+
+## CHANGES MADE
+List every fix with line references.
+
+## FIXED CONFIGURATION
+```apache
+[COMPLETE FIXED CONFIG HERE]
 ```
-After the config, list every change with line refs.
 """
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": prompt}
-        ]
-        result = self._call_api(
-            messages, max_tokens=8000
-        )
-        fixed_match = re.search(
-            r'```fixed\n(.*?)\n```',
+        result = self._call(prompt)
+        match = re.search(
+            r'```apache\n(.*?)\n```',
             result, re.DOTALL
         )
-        fixed_config = (
-            fixed_match.group(1)
-            if fixed_match else None
-        )
+        if not match:
+            match = re.search(
+                r'```\w*\n(.*?)\n```',
+                result, re.DOTALL
+            )
+
         return {
             "explanation":  result,
-            "fixed_config": fixed_config,
+            "fixed_config": match.group(1)
+                            if match else None,
         }
 
-    def chat(self, user_message, context=None):
-        """
-        General security chatbot.
-        Maintains conversation history.
-        """
-        # Add context if provided
-        if context and not self.conversation_history:
-            ctx_msg = (
-                f"Current scan context:\n"
-                f"Target: {context.get('target','')}\n"
-                f"Findings: "
-                f"{context.get('total', 0)} issues\n"
-                f"Risk: {context.get('risk','')}"
-            )
-            self.conversation_history = [
-                {"role": "system",
-                 "content": SYSTEM_PROMPT},
-                {"role": "user",
-                 "content": ctx_msg},
-                {"role": "assistant",
-                 "content": (
-                     "I have reviewed the scan context. "
-                     "I'm ready to help you analyze "
-                     "and fix these security issues. "
-                     "What would you like to know?"
-                 )},
-            ]
-
-        if not self.conversation_history:
-            self.conversation_history = [
-                {"role": "system",
-                 "content": SYSTEM_PROMPT}
-            ]
-
-        self.conversation_history.append(
-            {"role": "user", "content": user_message}
-        )
-        response = self._call_api(
-            self.conversation_history,
-            max_tokens=2048
-        )
-        self.conversation_history.append(
-            {"role": "assistant", "content": response}
-        )
-        return response
-
+    # ── NETWORK ANALYSIS ─────────────────────────────────────
     def analyze_network_findings(self, findings,
                                   recon_data, target):
         """Specialized network vulnerability analysis."""
@@ -458,37 +430,32 @@ After the config, list every change with line refs.
         ])
 
         prompt = f"""
-Network security assessment for: {target}
-OS: {os_info.get('os', 'Unknown')}
+Network security assessment:
+Target: {target}
+OS detected: {os_info.get('os', 'Unknown')}
 Open ports: {ports_str}
-Vulnerabilities found:
+
+Vulnerabilities:
 {findings_text}
+
 Provide:
 
-NETWORK ATTACK SURFACE ANALYSIS
-How exposed is this host?
-MOST DANGEROUS FINDINGS
-What can be exploited right now?
-ATTACK SCENARIOS
-Step-by-step how an attacker exploits this
-NETWORK HARDENING ROADMAP
-Priority fixes with commands:
+## 1. ATTACK SURFACE ANALYSIS
+How exposed is this host to attacks?
 
-Firewall rules (iptables/ufw)
-Service configuration changes
-Patch recommendations
+## 2. EXPLOITABLE NOW
+What can be attacked without any authentication?
 
+## 3. STEP-BY-STEP ATTACK SCENARIO
+How would an attacker compromise this host?
 
-MONITORING RECOMMENDATIONS
-What to log and alert on
+## 4. HARDENING COMMANDS
+Exact commands to fix each issue:
+- iptables/ufw rules
+- Service configuration changes
+- Package updates needed
+
+## 5. MONITORING SETUP
+What to log and alert on for this host.
 """
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": prompt}
-        ]
-        return self._call_api(messages, max_tokens=4096)
-        
-    def reset_conversation(self):
-        """Reset conversation history."""
-        self.conversation_history = []
-        self.current_context = {}
+        return self._call(prompt)

@@ -22,7 +22,7 @@ const ChatBot = ({
         role:    'assistant',
         content: (
             '👋 Hello! I\'m **Cybrain AI** — your ' +
-            'cybersecurity expert.\n\n' +
+            'cybersecurity expert powered by Gemini.\n\n' +
             'I can help you:\n' +
             '• Understand vulnerabilities found\n' +
             '• Explain attack techniques\n' +
@@ -32,17 +32,15 @@ const ChatBot = ({
     }]);
     const [input, setInput]     = useState('');
     const [loading, setLoading] = useState(false);
-    const [apiKey, setApiKey]   = useState(
-        localStorage.getItem('openrouter_key') || ''
-    );
-    const [showKey, setShowKey] = useState(!apiKey);
+    
     const bottomRef = useRef();
     const inputRef  = useRef();
 
-    // Zero automatic scrolling to respect user preference
     useEffect(() => {
-        // bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        if (open) {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, open]);
 
     const sendMessage = async (text) => {
         const msg = (text || input).trim();
@@ -58,8 +56,7 @@ const ChatBot = ({
                 '/api/chat',
                 {
                     message: msg,
-                    context: context,
-                    api_key: apiKey,
+                    context: context
                 }
             );
             setMessages(prev => [
@@ -76,8 +73,8 @@ const ChatBot = ({
                     role:    'assistant',
                     content: (
                         '⚠️ Connection error. ' +
-                        'Check your API key or ' +
-                        'try again.'
+                        'The security engine is currently overloaded. ' +
+                        'Please try again in a moment.'
                     ),
                 }
             ]);
@@ -88,14 +85,14 @@ const ChatBot = ({
     };
 
     const formatMessage = (content) => {
+        if (typeof content !== 'string') return '';
         return content
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`(.*?)`/g, '<code class="bg-black/40 px-1 rounded text-cyan-400">$1</code>')
+            .replace(/`(.*?)`/g, '<code class="bg-black/40 px-1 rounded text-cyan-400 font-mono">$1</code>')
             .replace(/\n/g, '<br>');
     };
 
-    // UI Renderers
     const renderHeader = () => (
         <div className="p-4 border-b border-cyan-500/10 flex items-center justify-between"
              style={{ background: 'rgba(0,245,212,0.05)' }}>
@@ -104,25 +101,26 @@ const ChatBot = ({
                     <span className="text-cyan-400 text-sm">✦</span>
                 </div>
                 <div>
-                    <p className="font-orbitron text-cyan-400 text-xs font-bold tracking-wider">CYBRAIN AI</p>
+                    <p className="font-orbitron text-cyan-400 text-[10px] font-bold tracking-wider">CYBRAIN AI</p>
+                    <p className="text-[9px] text-gray-500 font-inter">Gemini 1.5 Flash • AI Security Expert</p>
                 </div>
             </div>
             <div className="flex gap-2">
                 {position === 'fixed' && (
-                    <button onClick={() => setOpen(false)} className="text-gray-600 hover:text-gray-400 transition-colors text-lg leading-none">×</button>
+                    <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-white transition-colors text-xl leading-none">×</button>
                 )}
             </div>
         </div>
     );
 
-    const renderApiKey = () => null;
-
     const renderMessages = () => (
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role==='user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs font-inter leading-relaxed ${
-                        m.role==='user' ? 'bg-cyan-500/20 text-cyan-100 rounded-br-sm border border-cyan-500/30' : 'bg-white/5 text-gray-300 rounded-bl-sm border border-white/10'
+                    <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-xs font-inter leading-relaxed ${
+                        m.role==='user' 
+                            ? 'bg-cyan-500/10 text-cyan-100 rounded-br-sm border border-cyan-500/20' 
+                            : 'bg-white/5 text-gray-300 rounded-bl-sm border border-white/5'
                     }`}>
                         <div dangerouslySetInnerHTML={{ __html: formatMessage(m.content) }} />
                     </div>
@@ -130,10 +128,10 @@ const ChatBot = ({
             ))}
             {loading && (
                 <div className="flex justify-start">
-                    <div className="bg-white/5 rounded-2xl rounded-bl-sm px-4 py-3 border border-white/10">
-                        <div className="flex gap-1">
+                    <div className="bg-white/5 rounded-2xl rounded-bl-sm px-4 py-3 border border-white/5">
+                        <div className="flex gap-1.5">
                             {[0,1,2].map(i => (
-                                <div key={i} className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: `${i*0.2}s` }} />
+                                <div key={i} className="w-1.5 h-1.5 bg-cyan-400/60 rounded-full animate-bounce" style={{ animationDelay: `${i*0.2}s` }} />
                             ))}
                         </div>
                     </div>
@@ -146,7 +144,11 @@ const ChatBot = ({
     const renderSuggestions = () => messages.length <= 1 && (
         <div className="px-4 pb-2 flex flex-wrap gap-1.5">
             {SUGGESTIONS.slice(0,4).map((s, i) => (
-                <button key={i} onClick={() => sendMessage(s)} className="text-[10px] text-gray-500 border border-gray-800 rounded-full px-2 py-1 hover:border-cyan-500/40 hover:text-cyan-400 transition-colors font-inter">
+                <button 
+                    key={i} 
+                    onClick={() => sendMessage(s)} 
+                    className="text-[10px] text-gray-500 border border-gray-800 rounded-full px-3 py-1.5 hover:border-cyan-500/40 hover:text-cyan-400 transition-all font-inter bg-white/[0.02]"
+                >
                     {s}
                 </button>
             ))}
@@ -154,7 +156,7 @@ const ChatBot = ({
     );
 
     const renderInput = () => (
-        <div className="p-4 border-t border-gray-800/50">
+        <div className="p-4 border-t border-white/5">
             <div className="flex gap-2">
                 <input
                     ref={inputRef}
@@ -162,18 +164,21 @@ const ChatBot = ({
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                     placeholder="Ask about security..."
-                    className="flex-1 bg-black/40 border border-gray-700 rounded-xl px-3 py-2.5 text-gray-300 text-xs font-inter focus:outline-none focus:border-cyan-500/50 transition-all"
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-gray-300 text-xs font-inter focus:outline-none focus:border-cyan-500/40 transition-all"
                 />
                 <motion.button
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || loading}
                     whileHover={{scale:1.05}}
                     whileTap={{scale:0.95}}
-                    className="w-10 h-10 border border-cyan-500/50 text-cyan-400 rounded-xl hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-30 flex items-center justify-center text-sm"
+                    className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 rounded-xl hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-30 flex items-center justify-center text-sm"
                 >
-                    ▶
+                    <span className="transform rotate-[-45deg] ml-1">➤</span>
                 </motion.button>
             </div>
+            <p className="text-[9px] text-center text-gray-600 mt-2 font-inter tracking-wider">
+                AI can make mistakes. Verify critical results.
+            </p>
         </div>
     );
 
@@ -184,14 +189,13 @@ const ChatBot = ({
                 <AnimatePresence>
                     {open && (
                         <motion.div
-                            initial={{ opacity:0, scale:0.9, y:20 }}
+                            initial={{ opacity:0, scale:0.95, y:20 }}
                             animate={{ opacity:1, scale:1, y:0 }}
-                            exit={{ opacity:0, scale:0.9, y:20 }}
-                            className="fixed bottom-24 right-6 z-[200] w-96 h-[560px] flex flex-col rounded-2xl overflow-hidden border border-cyan-500/20 shadow-2xl shadow-cyan-500/10"
-                            style={{ background: 'rgba(5,5,15,0.97)', backdropFilter: 'blur(24px)' }}
+                            exit={{ opacity:0, scale:0.95, y:20 }}
+                            className="fixed bottom-24 right-6 z-[200] w-[350px] md:w-[400px] h-[550px] flex flex-col rounded-3xl overflow-hidden border border-white/10 shadow-2xl"
+                            style={{ background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(30px)' }}
                         >
                             {renderHeader()}
-                            {renderApiKey()}
                             {renderMessages()}
                             {renderSuggestions()}
                             {renderInput()}
@@ -200,12 +204,23 @@ const ChatBot = ({
                 </AnimatePresence>
                 <motion.button
                     onClick={() => setOpen(!open)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="fixed bottom-6 right-6 z-[200] w-14 h-14 rounded-full border border-cyan-500/50 bg-black/80 backdrop-blur-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 hover:bg-cyan-500/20 transition-all"
-                    style={{ boxShadow: open ? '0 0 30px rgba(0,245,212,0.3)' : '0 0 15px rgba(0,245,212,0.1)' }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="fixed bottom-6 right-6 z-[200] w-16 h-16 rounded-full border border-cyan-500/40 bg-black/60 backdrop-blur-2xl flex items-center justify-center shadow-2xl transition-all"
+                    style={{ 
+                        boxShadow: open 
+                            ? '0 0 30px rgba(0,245,212,0.3), inset 0 0 10px rgba(0,245,212,0.2)' 
+                            : '0 0 20px rgba(0,245,212,0.1)' 
+                    }}
                 >
-                    <span className="text-cyan-400 text-xl">{open ? '×' : '✦'}</span>
+                    <div className="relative">
+                        <span className={`text-cyan-400 text-2xl transition-all duration-300 ${open ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`}>
+                            ✦
+                        </span>
+                        <span className={`absolute inset-0 text-white text-3xl transition-all duration-300 ${open ? 'rotate-0 scale-100 opacity-100' : 'rotate-90 scale-0 opacity-0'}`}>
+                            ×
+                        </span>
+                    </div>
                 </motion.button>
             </>
         );
@@ -214,9 +229,8 @@ const ChatBot = ({
     // Inline dashboard version
     if (position === 'inline') {
         return (
-            <div className="w-full max-w-4xl mx-auto h-[600px] flex flex-col rounded-3xl overflow-hidden border border-cyan-500/20 shadow-2xl bg-black/40 backdrop-blur-3xl">
+            <div className="w-full h-full flex flex-col rounded-3xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-3xl">
                 {renderHeader()}
-                {renderApiKey()}
                 {renderMessages()}
                 {renderSuggestions()}
                 {renderInput()}

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import TabCards from './components/TabCards';
@@ -10,11 +10,14 @@ import ApacheScanPage from './pages/ApacheScanPage';
 import CodeScanPage from './pages/CodeScanPage';
 import NetworkScanPage from './pages/NetworkScanPage';
 import ReportPage from './pages/ReportPage';
+import PricingPage from './pages/PricingPage';
 import ChatBot from './components/ChatBot';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
 function HomePage() {
+    const navigate = useNavigate();
+
     const handleCardSelect = (tabId) => {
         const routesMap = {
             'web':     '/scan/web',
@@ -24,12 +27,11 @@ function HomePage() {
             'url':     '/scan/web'
         };
         if (routesMap[tabId]) {
-            window.location.href = routesMap[tabId];
+            navigate(routesMap[tabId]);
         }
     };
 
     React.useEffect(() => {
-        // Force scroll to top on load and prevent any auto-scroll
         if ('scrollRestoration' in window.history) {
             window.history.scrollRestoration = 'manual';
         }
@@ -38,12 +40,12 @@ function HomePage() {
 
     return (
         <div className="min-h-screen bg-black">
-            {/* 1. HERO SECTION */}
+            {/* HERO SECTION */}
             <HeroSection />
 
             <div className="content-section">
                 
-                {/* 1. CYBER INTELLIGENCE CARDS */}
+                {/* CYBER INTELLIGENCE CARDS */}
                 <section id="scanner" className="py-28 px-6 md:px-12 scroll-mt-20">
                     <div className="max-w-7xl mx-auto">
                         <div className="text-center mb-16">
@@ -75,10 +77,10 @@ function HomePage() {
                     </div>
                 </section>
 
-                {/* 2. ABOUT SERVICE SECTION */}
+                {/* ABOUT SERVICE SECTION */}
                 <AboutSection />
 
-                {/* 3. AI COMMAND SECTION */}
+                {/* AI COMMAND SECTION */}
                 <section className="py-24 px-6 bg-gradient-to-b from-transparent to-cyan-900/10">
                     <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
                         <motion.div
@@ -107,7 +109,7 @@ function HomePage() {
                     </div>
                 </section>
 
-                {/* 4. READY FOR DEPLOYMENT (Moved here) */}
+                {/* READY FOR DEPLOYMENT */}
                 <section className="py-24 px-6">
                     <motion.div 
                         initial={{ opacity: 0 }}
@@ -122,7 +124,7 @@ function HomePage() {
                         </p>
                         <a 
                             href="#scanner" 
-                            className="px-10 py-4 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 font-orbitron text-xs tracking-[0.3em] uppercase hover:bg-cyan-500 hover:text-black transition-all duration-300 rounded-sm flex items-center gap-3"
+                            className="px-10 py-4 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 font-orbitron text-xs tracking-[0.3em] uppercase hover:bg-cyan-500 hover:text-black transition-all duration-300 rounded-xl flex items-center gap-3"
                         >
                             INITIALIZE SCAN →
                         </a>
@@ -149,7 +151,6 @@ function HomePage() {
     );
 }
 
-
 function App() {
     return (
         <BrowserRouter>
@@ -159,6 +160,7 @@ function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
                     <Route path="/scan/web" element={<WebScanPage />} />
                     <Route path="/scan/apache" element={<ApacheScanPage />} />
                     <Route path="/scan/code" element={<CodeScanPage />} />
