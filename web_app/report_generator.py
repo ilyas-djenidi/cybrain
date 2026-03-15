@@ -1,28 +1,28 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — Professional Report Generator  (v2.0)
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+===============================================================
+  CYBRAIN - Professional Report Generator  (v2.0)
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
   OUTPUTS
-  ───────
-  • vulnerability_report.md  — full Markdown report
-  • findings_summary.csv     — spreadsheet export
-  • executive_summary.md     — 1-page exec brief
+  ???????
+  * vulnerability_report.md  - full Markdown report
+  * findings_summary.csv     - spreadsheet export
+  * executive_summary.md     - 1-page exec brief
 
   IMPROVEMENTS vs original
-  ────────────────────────
-  • Executive summary file (separate 1-pager)
-  • Network findings support (port, service, cve fields)
-  • Scan type auto-detection (web / network / code / apache)
-  • CVSS exact scores included when available
-  • Remediation roadmap sorted and numbered
-  • _strip_html handles HTML entities (&amp; &lt; etc.)
-  • JSON export added (machine-readable)
-  • Report header includes methodology + scope
+  ????????????????????????
+  * Executive summary file (separate 1-pager)
+  * Network findings support (port, service, cve fields)
+  * Scan type auto-detection (web / network / code / apache)
+  * CVSS exact scores included when available
+  * Remediation roadmap sorted and numbered
+  * _strip_html handles HTML entities (&amp; &lt; etc.)
+  * JSON export added (machine-readable)
+  * Report header includes methodology + scope
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
-═══════════════════════════════════════════════════════════════
+===============================================================
 """
 
 import os
@@ -36,27 +36,27 @@ from datetime import datetime
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 
 CVSS_RANGE = {
-    "CRITICAL": "9.0–10.0",
-    "HIGH":     "7.0–8.9",
-    "MEDIUM":   "4.0–6.9",
-    "LOW":      "0.1–3.9",
+    "CRITICAL": "9.0-10.0",
+    "HIGH":     "7.0-8.9",
+    "MEDIUM":   "4.0-6.9",
+    "LOW":      "0.1-3.9",
     "INFO":     "0.0",
 }
 
 EMOJI = {
-    "CRITICAL": "🔴",
-    "HIGH":     "🟠",
-    "MEDIUM":   "🟡",
-    "LOW":      "🟢",
-    "INFO":     "ℹ️",
+    "CRITICAL": "?",
+    "HIGH":     "?",
+    "MEDIUM":   "?",
+    "LOW":      "?",
+    "INFO":     "??",
 }
 
 RISK_COLOR = {
-    "CRITICAL": "CRITICAL — Immediate action required",
-    "HIGH":     "HIGH — Fix within 24–48 hours",
-    "MEDIUM":   "MEDIUM — Fix within 2 weeks",
-    "LOW":      "LOW — Fix when convenient",
-    "INFO":     "INFO — Informational",
+    "CRITICAL": "CRITICAL - Immediate action required",
+    "HIGH":     "HIGH - Fix within 24-48 hours",
+    "MEDIUM":   "MEDIUM - Fix within 2 weeks",
+    "LOW":      "LOW - Fix when convenient",
+    "INFO":     "INFO - Informational",
 }
 
 
@@ -74,14 +74,14 @@ class ReportGenerator:
         self.scan_type  = self._detect_scan_type(findings, scan_type)
         self.timestamp  = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Sort CRITICAL → INFO
+        # Sort CRITICAL -> INFO
         self.findings = sorted(
             findings,
             key=lambda f: SEVERITY_ORDER.get(f.get("severity", "INFO"), 99),
         )
         os.makedirs(report_dir, exist_ok=True)
 
-    # ── Scan type detection ────────────────────────────────────────────────
+    # ?? Scan type detection ????????????????????????????????????????????????
     def _detect_scan_type(self, findings: list, hint: str) -> str:
         if hint != "auto":
             return hint
@@ -98,13 +98,13 @@ class ReportGenerator:
             return "apache"
         return "web"
 
-    # ── HTML stripping + entity decoding ──────────────────────────────────
+    # ?? HTML stripping + entity decoding ??????????????????????????????????
     def _strip_html(self, text: str) -> str:
         """Remove HTML tags and decode entities."""
         clean = re.sub(r"<[^>]+>", "", str(text or ""))
         return html.unescape(clean).strip()
 
-    # ── Severity counts ────────────────────────────────────────────────────
+    # ?? Severity counts ????????????????????????????????????????????????????
     def _counts(self) -> dict:
         c = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "INFO": 0}
         for f in self.findings:
@@ -118,15 +118,15 @@ class ReportGenerator:
                 return sev
         return "INFO"
 
-    # ── OWASP label helper ─────────────────────────────────────────────────
+    # ?? OWASP label helper ?????????????????????????????????????????????????
     def _owasp_label(self, f: dict) -> str:
         oid  = f.get("owasp_id", "")
         name = f.get("owasp_name", "")
         if oid and name:
-            return f"{oid} — {name}"
+            return f"{oid} - {name}"
         return f.get("owasp", oid or name or "N/A")
 
-    # ── CVSS display ───────────────────────────────────────────────────────
+    # ?? CVSS display ???????????????????????????????????????????????????????
     def _cvss_display(self, f: dict) -> str:
         exact = f.get("cvss", "")
         sev   = f.get("severity", "INFO")
@@ -134,7 +134,7 @@ class ReportGenerator:
             return f"{exact} ({CVSS_RANGE.get(sev, 'N/A')})"
         return CVSS_RANGE.get(sev, "N/A")
 
-    # ── Generate all outputs ───────────────────────────────────────────────
+    # ?? Generate all outputs ???????????????????????????????????????????????
     def generate_all(self) -> tuple:
         md_path   = self.save_markdown()
         csv_path  = self.save_csv()
@@ -146,9 +146,9 @@ class ReportGenerator:
         print(f"[REPORT] JSON: {json_path}")
         return md_path, csv_path
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  MARKDOWN REPORT
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     def save_markdown(self) -> str:
         counts = self._counts()
         risk   = self._overall_risk(counts)
@@ -172,10 +172,10 @@ class ReportGenerator:
             f"| **Target** | `{self.target}` |",
             f"| **Scan Date** | {self.timestamp} |",
             f"| **Scan Type** | {self.scan_type.upper()} |",
-            f"| **Overall Risk** | **{risk}** — {RISK_COLOR[risk]} |",
+            f"| **Overall Risk** | **{risk}** - {RISK_COLOR[risk]} |",
             f"| **Methodology** | OWASP Testing Guide v4.2 + CWE/SANS Top 25 |",
             f"| **Framework** | OWASP Top 10 2025 |",
-            f"| **Purpose** | PFE Master 2 — Information Security Research |",
+            f"| **Purpose** | PFE Master 2 - Information Security Research |",
             "| **Institution** | University of Mohamed Boudiaf, M'sila, Algeria |",
             "", "---", "",
             "## Executive Summary", "",
@@ -193,7 +193,7 @@ class ReportGenerator:
             "", "---", "",
         ]
 
-        # ── Vulnerability Summary Table ────────────────────────────────────
+        # ?? Vulnerability Summary Table ????????????????????????????????????
         if self.scan_type == "network":
             lines += [
                 "## Vulnerability Summary", "",
@@ -224,7 +224,7 @@ class ReportGenerator:
 
         lines += ["", "---", "", "## Detailed Findings", ""]
 
-        # ── Detailed Findings ──────────────────────────────────────────────
+        # ?? Detailed Findings ??????????????????????????????????????????????
         for i, f in enumerate(self.findings, 1):
             sev   = f.get("severity", "INFO")
             em    = EMOJI.get(sev, "")
@@ -273,14 +273,14 @@ class ReportGenerator:
 
             lines += ["---", ""]
 
-        # ── Remediation Roadmap ────────────────────────────────────────────
+        # ?? Remediation Roadmap ????????????????????????????????????????????
         lines += ["## Remediation Roadmap", ""]
 
         roadmap = [
-            ("CRITICAL", "Priority 1 — Fix Immediately"),
-            ("HIGH",     "Priority 2 — Fix This Week"),
-            ("MEDIUM",   "Priority 3 — Fix This Month"),
-            ("LOW",      "Priority 4 — Fix When Possible"),
+            ("CRITICAL", "Priority 1 - Fix Immediately"),
+            ("HIGH",     "Priority 2 - Fix This Week"),
+            ("MEDIUM",   "Priority 3 - Fix This Month"),
+            ("LOW",      "Priority 4 - Fix When Possible"),
         ]
         for sev, label in roadmap:
             items = [f for f in self.findings if f.get("severity") == sev]
@@ -294,7 +294,7 @@ class ReportGenerator:
                     lines.append(f"- [ ] **{title}**{cwe_str}")
                 lines.append("")
 
-        # ── Conclusion ─────────────────────────────────────────────────────
+        # ?? Conclusion ?????????????????????????????????????????????????????
         lines += [
             "---", "",
             "## Conclusion", "",
@@ -315,7 +315,7 @@ class ReportGenerator:
             "",
             "*Report generated by **Cybrain Intelligence Platform** "
             f"on {self.timestamp}.*",
-            "*PFE Master 2 — Information Security — "
+            "*PFE Master 2 - Information Security - "
             "University of Mohamed Boudiaf, M'sila, Algeria.*",
             "",
         ]
@@ -324,9 +324,9 @@ class ReportGenerator:
             fh.write("\n".join(lines))
         return path
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  CSV EXPORT
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     def save_csv(self) -> str:
         path = os.path.join(self.report_dir, "findings_summary.csv")
 
@@ -370,9 +370,9 @@ class ReportGenerator:
                     })
         return path
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  EXECUTIVE SUMMARY (1-page brief)
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     def save_executive_summary(self) -> str:
         counts = self._counts()
         risk   = self._overall_risk(counts)
@@ -387,7 +387,7 @@ class ReportGenerator:
         ]
 
         lines = [
-            "# Executive Summary — Security Assessment",
+            "# Executive Summary - Security Assessment",
             "",
             f"**Target:** `{self.target}`  ",
             f"**Date:** {self.timestamp}  ",
@@ -410,20 +410,20 @@ class ReportGenerator:
         ]
 
         if critical_items:
-            lines += ["## Critical Issues — Fix Immediately", ""]
+            lines += ["## Critical Issues - Fix Immediately", ""]
             for f in critical_items[:5]:
                 t    = f.get("title", f.get("code", "Unknown"))
                 desc = self._strip_html(
                     f.get("description", f.get("message", ""))
                 )[:120]
-                lines.append(f"- 🔴 **{t}** — {desc}...")
+                lines.append(f"- ? **{t}** - {desc}...")
             lines.append("")
 
         if high_items:
             lines += ["## High Priority Issues", ""]
             for f in high_items[:5]:
                 t = f.get("title", f.get("code", "Unknown"))
-                lines.append(f"- 🟠 **{t}**")
+                lines.append(f"- ? **{t}**")
             lines.append("")
 
         lines += [
@@ -438,17 +438,17 @@ class ReportGenerator:
             "",
             "---",
             "",
-            f"*Generated by Cybrain — {self.timestamp}*",
-            "*PFE Master 2 — University of Mohamed Boudiaf, M'sila*",
+            f"*Generated by Cybrain - {self.timestamp}*",
+            "*PFE Master 2 - University of Mohamed Boudiaf, M'sila*",
         ]
 
         with open(path, "w", encoding="utf-8") as fh:
             fh.write("\n".join(lines))
         return path
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  JSON EXPORT (machine-readable)
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     def save_json(self) -> str:
         counts = self._counts()
         risk   = self._overall_risk(counts)

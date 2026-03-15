@@ -9,7 +9,7 @@ const PLANS = {
             name: 'Free',
             subtitle: 'For students & learners',
             price: 0,
-            currency: '€',
+            currency: 'DA',
             period: '/month',
             color: 'cyan',
             icon: Zap,
@@ -50,8 +50,8 @@ const PLANS = {
             id: 'pro',
             name: 'Pro',
             subtitle: 'For security professionals',
-            price: 19,
-            currency: '€',
+            price: 19000,
+            currency: 'DA',
             period: '/month',
             color: 'purple',
             icon: Shield,
@@ -92,8 +92,8 @@ const PLANS = {
             id: 'enterprise',
             name: 'Enterprise',
             subtitle: 'For teams & organizations',
-            price: 79,
-            currency: '€',
+            price: 79000,
+            currency: 'DA',
             period: '/month',
             color: 'amber',
             icon: Crown,
@@ -135,7 +135,7 @@ const PLANS = {
 
 // Annual plans = 2 months free (×10 instead of ×12)
 const getAnnualPrice = (monthly) =>
-    monthly === 0 ? 0 : Math.round(monthly * 10);
+    monthly === 0 ? 0 : monthly * 10;
 
 const COLOR_MAP = {
     cyan: {
@@ -383,7 +383,7 @@ const PricingPage = () => {
                                                        md:text-5xl
                                                        text-white"
                                         >
-                                            {price}
+                                            {price === 0 ? '0' : price.toLocaleString()}
                                         </motion.span>
                                         <span className="text-gray-500
                                                          text-sm
@@ -400,7 +400,7 @@ const PricingPage = () => {
                                         <p className="text-gray-600
                                                       text-xs
                                                       font-inter mt-1">
-                                            €{plan.price}/mo
+                                            {plan.price.toLocaleString()} DA/mo
                                             billed annually
                                         </p>
                                     )}
@@ -578,7 +578,7 @@ const PricingPage = () => {
                                     ['White Label',       '✗',        '✗',        '✓'],
                                     ['Support',           'Community','Email 24h', 'Dedicated'],
                                     ['SLA',               '✗',        '99%',      '99.9%'],
-                                    ['Price',             '€0',       '€19/mo',   '€79/mo'],
+                                     ['Price',             '0 DA',     '19,000 DA/mo','79,000 DA/mo'],
                                 ].map((row, i) => (
                                     <tr key={i}
                                         className={`

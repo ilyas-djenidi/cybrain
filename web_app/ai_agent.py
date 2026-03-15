@@ -1,36 +1,36 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — AI Security Analysis Engine  (v2.0)
+===============================================================
+  CYBRAIN - AI Security Analysis Engine  (v2.0)
   Gemini 2.0 Flash + Pure Python Offline Fallback
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
   MODES
-  ─────
+  ?????
   Online  : Gemini 2.0 Flash via google-generativeai
   Offline : Full rule-based engine (zero quota, works always)
 
   FEATURES
-  ────────
-  • chat()                — security Q&A (online/offline)
-  • analyze_findings()    — executive report from scan results
-  • analyze_code_file()   — code-level AI analysis
-  • fix_code()            — automatic code fix (regex + AI)
-  • fix_apache_config()   — Apache config hardening
-  • reset_chat()          — clear conversation history
+  ????????
+  * chat()                - security Q&A (online/offline)
+  * analyze_findings()    - executive report from scan results
+  * analyze_code_file()   - code-level AI analysis
+  * fix_code()            - automatic code fix (regex + AI)
+  * fix_apache_config()   - Apache config hardening
+  * reset_chat()          - clear conversation history
 
   IMPROVEMENTS vs original
-  ────────────────────────
-  • Gemini prompt quality improved (system role + structured output)
-  • Chat history included in Gemini context window
-  • Offline fallback covers all methods (never crashes)
-  • Code fix templates expanded to 8 languages
-  • Apache fix rules expanded to 15 rules
-  • analyze_code_file() new method for CodeAnalyzer integration
-  • Security score formula tuned
+  ????????????????????????
+  * Gemini prompt quality improved (system role + structured output)
+  * Chat history included in Gemini context window
+  * Offline fallback covers all methods (never crashes)
+  * Code fix templates expanded to 8 languages
+  * Apache fix rules expanded to 15 rules
+  * analyze_code_file() new method for CodeAnalyzer integration
+  * Security score formula tuned
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
-═══════════════════════════════════════════════════════════════
+===============================================================
 """
 
 import os
@@ -49,7 +49,7 @@ try:
 except ImportError:
     _GENAI_AVAILABLE = False
 
-# ── CVE / CWE Knowledge Base ───────────────────────────────────────────────
+# ?? CVE / CWE Knowledge Base ???????????????????????????????????????????????
 CVE_DATABASE: dict = {
     "SQL Injection": {
         "cve": "CVE-2023-23397", "cwe": "CWE-89", "cvss": "9.8",
@@ -57,7 +57,7 @@ CVE_DATABASE: dict = {
         "attack": (
             "Attacker injects ' OR 1=1-- into login form. Backend executes: "
             "SELECT * FROM users WHERE username='' OR 1=1--'. "
-            "Query returns all users — authentication bypassed."
+            "Query returns all users - authentication bypassed."
         ),
         "fix_cmd": (
             "Python: cursor.execute('SELECT * FROM users WHERE id=?', (user_id,))\n"
@@ -93,7 +93,7 @@ CVE_DATABASE: dict = {
             "Python: import os; pwd = os.environ.get('DB_PASSWORD')\n"
             "JS:     const pwd = process.env.DB_PASSWORD\n"
             "Create .env: DB_PASSWORD=your_secure_password\n"
-            "Add .env to .gitignore — NEVER commit it"
+            "Add .env to .gitignore - NEVER commit it"
         ),
     },
     "Command Injection": {
@@ -153,7 +153,7 @@ CVE_DATABASE: dict = {
         "owasp": "A02:2025 Security Misconfiguration",
         "attack": (
             "No X-Frame-Options. Attacker embeds victim site in iframe. "
-            "Overlays invisible buttons. User clicks — triggers unintended action."
+            "Overlays invisible buttons. User clicks - triggers unintended action."
         ),
         "fix_cmd": (
             'Header always set X-Frame-Options "DENY"\n'
@@ -191,10 +191,10 @@ CVE_DATABASE: dict = {
     },
 }
 
-# ── Severity weight for security score ────────────────────────────────────
+# ?? Severity weight for security score ????????????????????????????????????
 SEVERITY_WEIGHT = {"CRITICAL": 10, "HIGH": 7, "MEDIUM": 4, "LOW": 1, "INFO": 0}
 
-# ── Code fix templates (regex-based, no AI) ───────────────────────────────
+# ?? Code fix templates (regex-based, no AI) ???????????????????????????????
 CODE_FIX_TEMPLATES: dict = {
     "SQL Injection": {
         "py": [
@@ -264,7 +264,7 @@ CODE_FIX_TEMPLATES: dict = {
     },
 }
 
-# ── Apache fix rules ──────────────────────────────────────────────────────
+# ?? Apache fix rules ??????????????????????????????????????????????????????
 APACHE_FIXES: list = [
     (r'Order\s+allow,deny',                     'Require all granted'),
     (r'Order\s+deny,allow',                     'Require all denied'),
@@ -286,7 +286,7 @@ APACHE_FIXES: list = [
 ]
 
 APACHE_SECURITY_HEADERS = """
-# ── Security Headers added by Cybrain ──────────────────────────────────
+# ?? Security Headers added by Cybrain ??????????????????????????????????
 Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
 Header always set X-Frame-Options "DENY"
 Header always set X-Content-Type-Options "nosniff"
@@ -295,7 +295,7 @@ Header always set Referrer-Policy "strict-origin-when-cross-origin"
 Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
 Header always set Cross-Origin-Opener-Policy "same-origin"
 Header always set Cross-Origin-Resource-Policy "same-origin"
-# ────────────────────────────────────────────────────────────────────────
+# ????????????????????????????????????????????????????????????????????????
 """
 
 
@@ -317,11 +317,11 @@ class CybrainAgent:
                 self.ai_active = True
                 print("[ENGINE] Gemini 2.0 Flash connected [OK]")
             except Exception as e:
-                print(f"[ENGINE] Gemini unavailable: {e} — offline mode active")
+                print(f"[ENGINE] Gemini unavailable: {e} - offline mode active")
         else:
             print("[ENGINE] Offline mode (no GEMINI_API_KEY or google-generativeai)")
 
-    # ── Gemini helper ──────────────────────────────────────────────────────
+    # ?? Gemini helper ??????????????????????????????????????????????????????
     def _gemini(self, prompt: str, system: str = "") -> str | None:
         """Call Gemini. Returns text or None on failure."""
         if not self.ai_active or not self.model:
@@ -334,9 +334,9 @@ class CybrainAgent:
             print(f"[ENGINE] Gemini call failed: {e}")
             return None
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  CHAT
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
 
     def chat(self, user_message: str, context: dict = None) -> str:
         """
@@ -383,7 +383,7 @@ class CybrainAgent:
         return reply
 
     def _answer_offline(self, msg: str, context: dict) -> str:
-        """Rule-based security Q&A — offline fallback."""
+        """Rule-based security Q&A - offline fallback."""
 
         if context and any(k in msg for k in [
             "finding", "explain", "result", "scan", "vulnerability", "found"
@@ -396,7 +396,7 @@ class CybrainAgent:
                 "**Attack:** Injecting SQL code into user inputs to manipulate DB queries.\n\n"
                 "```sql\n-- Input: ' OR 1=1--\n"
                 "SELECT * FROM users WHERE username='' OR 1=1--'\n"
-                "-- Returns ALL users — auth bypassed\n```\n\n"
+                "-- Returns ALL users - auth bypassed\n```\n\n"
                 "**Fix:**\n```python\ncursor.execute(\n"
                 "    'SELECT * FROM users WHERE id=?', (user_id,)\n)\n```\n\n"
                 "**CVSS:** 9.8 CRITICAL | **OWASP:** A05:2025"
@@ -416,18 +416,18 @@ class CybrainAgent:
 
         if "owasp" in msg:
             return (
-                "## OWASP Top 10 — 2025\n\n"
+                "## OWASP Top 10 - 2025\n\n"
                 "| # | Category | Risk |\n|---|----------|------|\n"
-                "| A01 | Broken Access Control | 🔴 CRITICAL |\n"
-                "| A02 | Security Misconfiguration | 🟠 HIGH |\n"
-                "| A03 | Software Supply Chain | 🟠 HIGH |\n"
-                "| A04 | Cryptographic Failures | 🟠 HIGH |\n"
-                "| A05 | Injection (SQLi/XSS/SSTI) | 🔴 CRITICAL |\n"
-                "| A06 | Insecure Design | 🟠 HIGH |\n"
-                "| A07 | Authentication Failures | 🔴 CRITICAL |\n"
-                "| A08 | Integrity Failures | 🟠 HIGH |\n"
-                "| A09 | Logging Failures | 🟡 MEDIUM |\n"
-                "| A10 | Exception Mishandling | 🟡 MEDIUM |"
+                "| A01 | Broken Access Control | ? CRITICAL |\n"
+                "| A02 | Security Misconfiguration | ? HIGH |\n"
+                "| A03 | Software Supply Chain | ? HIGH |\n"
+                "| A04 | Cryptographic Failures | ? HIGH |\n"
+                "| A05 | Injection (SQLi/XSS/SSTI) | ? CRITICAL |\n"
+                "| A06 | Insecure Design | ? HIGH |\n"
+                "| A07 | Authentication Failures | ? CRITICAL |\n"
+                "| A08 | Integrity Failures | ? HIGH |\n"
+                "| A09 | Logging Failures | ? MEDIUM |\n"
+                "| A10 | Exception Mishandling | ? MEDIUM |"
             )
 
         if any(k in msg for k in ["header", "csp", "hsts", "x-frame"]):
@@ -441,8 +441,8 @@ class CybrainAgent:
                 "\"max-age=31536000; includeSubDomains\"\n"
                 "Header always set Referrer-Policy "
                 "\"strict-origin-when-cross-origin\"\n```\n\n"
-                "• **CSP** — blocks XSS  • **X-Frame** — prevents clickjacking\n"
-                "• **HSTS** — forces HTTPS  • **Referrer** — hides URL from 3rd parties"
+                "* **CSP** - blocks XSS  * **X-Frame** - prevents clickjacking\n"
+                "* **HSTS** - forces HTTPS  * **Referrer** - hides URL from 3rd parties"
             )
 
         if any(k in msg for k in ["apache", "httpd", "htaccess"]):
@@ -462,22 +462,22 @@ class CybrainAgent:
             return (
                 "## Severity Levels\n\n"
                 "| Level | CVSS | Action |\n|-------|------|--------|\n"
-                "| 🔴 CRITICAL | 9.0–10.0 | Fix immediately |\n"
-                "| 🟠 HIGH | 7.0–8.9 | Fix within 48 hours |\n"
-                "| 🟡 MEDIUM | 4.0–6.9 | Fix within 2 weeks |\n"
-                "| 🟢 LOW | 0.1–3.9 | Fix when possible |"
+                "| ? CRITICAL | 9.0-10.0 | Fix immediately |\n"
+                "| ? HIGH | 7.0-8.9 | Fix within 48 hours |\n"
+                "| ? MEDIUM | 4.0-6.9 | Fix within 2 weeks |\n"
+                "| ? LOW | 0.1-3.9 | Fix when possible |"
             )
 
         return (
             "## Cybrain Security Engine\n\n"
             "Ask me about:\n"
-            "• SQL Injection, XSS, SSTI, SSRF, Command Injection\n"
-            "• OWASP Top 10 2025\n"
-            "• HTTP Security Headers\n"
-            "• Apache Hardening\n"
-            "• Severity levels and CVSS\n"
-            "• Your scan findings — 'explain my findings'\n\n"
-            "*Tip: I work fully offline — no API key needed for basic Q&A.*"
+            "* SQL Injection, XSS, SSTI, SSRF, Command Injection\n"
+            "* OWASP Top 10 2025\n"
+            "* HTTP Security Headers\n"
+            "* Apache Hardening\n"
+            "* Severity levels and CVSS\n"
+            "* Your scan findings - 'explain my findings'\n\n"
+            "*Tip: I work fully offline - no API key needed for basic Q&A.*"
         )
 
     def _explain_context(self, context: dict) -> str:
@@ -487,20 +487,20 @@ class CybrainAgent:
 
         if total == 0:
             return (
-                f"## Scan Results — {target}\n\n"
+                f"## Scan Results - {target}\n\n"
                 "No vulnerabilities found. Good posture, but verify:\n"
-                "• The target was reachable and fully scanned\n"
-                "• Try a known-vulnerable target: testphp.vulnweb.com"
+                "* The target was reachable and fully scanned\n"
+                "* Try a known-vulnerable target: testphp.vulnweb.com"
             )
         advice = {
-            "CRITICAL": "🔴 **IMMEDIATE ACTION REQUIRED.** Critical vulns are exploitable NOW.",
-            "HIGH":     "🟠 **Fix within 24–48 hours.** Serious security risk.",
-            "MEDIUM":   "🟡 **Fix within 2 weeks.** Address in next release.",
-            "LOW":      "🟢 **Fix when convenient.** Minor improvements.",
+            "CRITICAL": "? **IMMEDIATE ACTION REQUIRED.** Critical vulns are exploitable NOW.",
+            "HIGH":     "? **Fix within 24-48 hours.** Serious security risk.",
+            "MEDIUM":   "? **Fix within 2 weeks.** Address in next release.",
+            "LOW":      "? **Fix when convenient.** Minor improvements.",
         }.get(risk, "Review findings below.")
 
         return (
-            f"## Security Assessment — {target}\n\n"
+            f"## Security Assessment - {target}\n\n"
             f"**Findings:** {total} | **Risk:** {risk}\n\n"
             f"{advice}\n\n"
             "**Next steps:**\n"
@@ -510,9 +510,9 @@ class CybrainAgent:
             "4. Export the report for documentation"
         )
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  FINDINGS ANALYSIS
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
 
     def analyze_findings(self, findings: list, target: str,
                           scan_type: str = "web") -> str:
@@ -573,12 +573,12 @@ class CybrainAgent:
 
         has_crit = counts.get("CRITICAL", 0) > 0
         has_high = counts.get("HIGH", 0) > 0
-        gdpr  = "⚠️ VIOLATION RISK" if has_crit else "✓ Monitor"
-        pci   = "⚠️ FAIL"           if has_crit or has_high else "✓ Review"
-        iso   = "⚠️ NON-CONFORMITY" if has_high else "✓ Minor gaps"
+        gdpr  = "[!] VIOLATION RISK" if has_crit else "? Monitor"
+        pci   = "[!] FAIL"           if has_crit or has_high else "? Review"
+        iso   = "[!] NON-CONFORMITY" if has_high else "? Minor gaps"
 
         return (
-            f"# Security Report — {target}\n\n"
+            f"# Security Report - {target}\n\n"
             f"**Date:** {now} | **Scan:** {scan_type.upper()} | **Risk:** {risk}\n\n"
             "---\n\n"
             f"## 1. Executive Summary\n\n"
@@ -593,16 +593,16 @@ class CybrainAgent:
             f"| PCI-DSS | {pci} |\n"
             f"| ISO 27001 | {iso} |\n\n"
             f"## 4. Security Score\n\n"
-            f"**{score}/100** — "
+            f"**{score}/100** - "
             + ("Excellent." if score >= 90 else
-               "Good baseline — fix HIGH findings." if score >= 70 else
-               "Significant gaps — immediate action needed." if score >= 50 else
-               "Critical posture — system may be compromised.")
+               "Good baseline - fix HIGH findings." if score >= 70 else
+               "Significant gaps - immediate action needed." if score >= 50 else
+               "Critical posture - system may be compromised.")
         )
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  CODE ANALYSIS (for CodeAnalyzer integration)
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
 
     def analyze_code_file(self, content: str, filename: str,
                            language: str = "Unknown") -> str:
@@ -627,7 +627,7 @@ class CybrainAgent:
                 return result
 
         return (
-            f"## Static Analysis Results — {filename}\n\n"
+            f"## Static Analysis Results - {filename}\n\n"
             f"**Language:** {language}\n\n"
             "AI deep analysis unavailable (no GEMINI_API_KEY). "
             "Static pattern scan results are shown in the findings panel above.\n\n"
@@ -637,9 +637,9 @@ class CybrainAgent:
             "3. Re-run the analysis"
         )
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  CODE FIXER
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
 
     def fix_code(self, content: str, filename: str,
                   language: str = None) -> dict:
@@ -659,18 +659,18 @@ class CybrainAgent:
                         f"# CYBRAIN FIX: {vuln_name}\n{new_val}",
                         fixed, flags=re.IGNORECASE,
                     )
-                    changes_made.append(f"✓ Fixed: {vuln_name}")
+                    changes_made.append(f"? Fixed: {vuln_name}")
 
         # Add missing imports
         if "subprocess.run" in fixed and "import subprocess" not in fixed:
             fixed = "import subprocess\n" + fixed
-            changes_made.append("✓ Added: import subprocess")
+            changes_made.append("? Added: import subprocess")
         if "os.environ" in fixed and "import os" not in fixed:
             fixed = "import os\n" + fixed
-            changes_made.append("✓ Added: import os")
+            changes_made.append("? Added: import os")
 
         if not changes_made:
-            changes_made = ["No automatic fixes applied — review manually."]
+            changes_made = ["No automatic fixes applied - review manually."]
 
         # Try AI fix if available
         if self.ai_active:
@@ -690,10 +690,10 @@ class CybrainAgent:
                 m = re.search(r"```(?:\w+)?\n(.*?)```", ai_fixed, re.DOTALL)
                 if m:
                     fixed = m.group(1)
-                    changes_made.append("✓ AI deep fix applied")
+                    changes_made.append("? AI deep fix applied")
 
         explanation = (
-            f"## Code Fix Report — {filename}\n\n"
+            f"## Code Fix Report - {filename}\n\n"
             f"**Engine:** Cybrain v2.0 ({'AI + ' if self.ai_active else ''}Static Fixer)\n"
             f"**Changes:** {len(changes_made)}\n\n"
             "## Changes Made\n\n" + "\n".join(changes_made) +
@@ -709,9 +709,9 @@ class CybrainAgent:
             "language":    lang,
         }
 
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
     #  APACHE CONFIG FIXER
-    # ══════════════════════════════════════════════════════════════════════
+    # ======================================================================
 
     def fix_apache_config(self, config_content: str,
                            findings: list = None) -> dict:
@@ -725,7 +725,7 @@ class CybrainAgent:
                     old_pat, new_val, fixed,
                     flags=re.MULTILINE | re.IGNORECASE,
                 )
-                changes.append(f"✓ {old_pat} → {new_val[:50]}")
+                changes.append(f"? {old_pat} -> {new_val[:50]}")
 
         # Add security headers if missing
         if ("Content-Security-Policy" not in fixed and
@@ -737,17 +737,17 @@ class CybrainAgent:
                 )
             else:
                 fixed += "\n" + APACHE_SECURITY_HEADERS
-            changes.append("✓ Added all security headers")
+            changes.append("? Added all security headers")
 
         # Flag ProxyPass in Directory (manual fix needed)
         if re.search(r"<Directory[^>]+>.*?ProxyPass",
                       fixed, re.DOTALL | re.IGNORECASE):
             changes.append(
-                "⚠️ Manual fix needed: Move ProxyPass outside <Directory>"
+                "[!] Manual fix needed: Move ProxyPass outside <Directory>"
             )
 
         if not changes:
-            changes = ["Config looks clean — no automatic fixes applied."]
+            changes = ["Config looks clean - no automatic fixes applied."]
 
         explanation = (
             f"## Apache Config Fix Report\n\n"
@@ -760,12 +760,12 @@ class CybrainAgent:
 
         return {"explanation": explanation, "fixed_config": fixed}
 
-    # ── Network analysis (alias) ───────────────────────────────────────────
+    # ?? Network analysis (alias) ???????????????????????????????????????????
     def analyze_network_findings(self, findings: list,
                                   recon_data: dict, target: str) -> str:
         return self.analyze_findings(findings, target, "network")
 
-    # ── Reset ──────────────────────────────────────────────────────────────
+    # ?? Reset ??????????????????????????????????????????????????????????????
     def reset_chat(self):
         self.chat_history    = []
         self.current_context = {}

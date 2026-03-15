@@ -1,29 +1,36 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — Network Scanner Controller  (v2.0)
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+===============================================================
+  CYBRAIN - Network Scanner Controller  (v2.0)
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
   IMPROVEMENTS vs original
-  ────────────────────────
-  • Richer recon summary card (IP, OS, open ports, reverse DNS, IPv6)
-  • Scan duration timer in console output
-  • Robust _format_for_ui — handles all finding fields safely
-  • _calc_overall_risk uses raw findings (not UI-formatted)
-  • Port risk classifier — marks CRITICAL/HIGH/MEDIUM ports in summary
-  • Graceful fallback if NetworkRecon or NetworkVulnScanner fails
-  • Identical public API to original (drop-in replacement)
+  ????????????????????????
+  * Richer recon summary card (IP, OS, open ports, reverse DNS, IPv6)
+  * Scan duration timer in console output
+  * Robust _format_for_ui - handles all finding fields safely
+  * _calc_overall_risk uses raw findings (not UI-formatted)
+  * Port risk classifier - marks CRITICAL/HIGH/MEDIUM ports in summary
+  * Graceful fallback if NetworkRecon or NetworkVulnScanner fails
+  * Identical public API to original (drop-in replacement)
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
-═══════════════════════════════════════════════════════════════
+===============================================================
 """
 
 import os
+import sys
+import io
 from datetime import datetime
 
 from network_recon import NetworkRecon
 from network_vulns import NetworkVulnScanner
 from report_generator import ReportGenerator
+
+# Prevent UnicodeEncodeError on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 SEVERITY_ORDER = {
     "CRITICAL": 0, "HIGH": 1,
@@ -45,11 +52,11 @@ class NetworkScanner:
     + report generation + React UI formatting.
 
     Public API (identical to original)
-    ───────────────────────────────────
+    ???????????????????????????????????
     scanner = NetworkScanner(target)
-    results = scanner.scan()            → list[dict]
+    results = scanner.scan()            -> list[dict]
     risk    = scanner._calc_overall_risk()
-    recon   = scanner.recon_data        → dict
+    recon   = scanner.recon_data        -> dict
     """
 
     def __init__(self, target: str, timeout: int = 30):
@@ -65,7 +72,7 @@ class NetworkScanner:
         )
         os.makedirs(self.report_dir, exist_ok=True)
 
-    # ── Target cleaning ────────────────────────────────────────────────────
+    # ?? Target cleaning ????????????????????????????????????????????????????
     @staticmethod
     def _clean_target(target: str) -> str:
         """Strip protocol, path, and port from any input."""
@@ -77,7 +84,7 @@ class NetworkScanner:
         t = t.split(":")[0]
         return t
 
-    # ── UI formatter ───────────────────────────────────────────────────────
+    # ?? UI formatter ???????????????????????????????????????????????????????
     def _format_for_ui(self, finding: dict) -> dict:
         """Convert raw finding dict to React UI format."""
         parts = []
@@ -117,7 +124,7 @@ class NetworkScanner:
             "file":     self.target,
         }
 
-    # ── Recon summary finding ──────────────────────────────────────────────
+    # ?? Recon summary finding ??????????????????????????????????????????????
     def _build_summary_finding(self) -> dict:
         """Build the INFO card shown at the top of results."""
         dns      = self.recon_data.get("dns", {})
@@ -128,13 +135,13 @@ class NetworkScanner:
         # Annotate high-risk ports
         port_items = []
         for p in open_pts[:15]:
-            risk_tag = " ⚠️" if p["port"] in HIGH_RISK_PORTS else ""
-            banner   = f" — {p['banner'][:40]}" if p.get("banner") else ""
+            risk_tag = " [!]" if p["port"] in HIGH_RISK_PORTS else ""
+            banner   = f" - {p['banner'][:40]}" if p.get("banner") else ""
             port_items.append(
                 f"{p['port']}/{p['service']}{risk_tag}{banner}"
             )
         if len(open_pts) > 15:
-            port_items.append(f"… +{len(open_pts) - 15} more")
+            port_items.append(f"... +{len(open_pts) - 15} more")
 
         evidence = "<br>".join(port_items) if port_items else "No open ports found"
 
@@ -147,7 +154,7 @@ class NetworkScanner:
                 f"<strong>Reverse DNS:</strong> {dns.get('reverse_dns','N/A')}<br>"
                 f"<strong>IPv6:</strong> {dns.get('ipv6','N/A')}<br>"
                 f"<strong>OS:</strong> {os_info.get('os','Unknown')} "
-                f"[{os_info.get('method','—')} / {os_info.get('confidence','—')}]<br>"
+                f"[{os_info.get('method','-')} / {os_info.get('confidence','-')}]<br>"
                 f"<strong>Open Ports:</strong> {ports.get('total_open',0)} "
                 f"/ {ports.get('scanned',0)} scanned"
             ),
@@ -159,15 +166,15 @@ class NetworkScanner:
             "target":   self.target,
         }
 
-    # ── MAIN SCAN ──────────────────────────────────────────────────────────
+    # ?? MAIN SCAN ??????????????????????????????????????????????????????????
     def scan(self) -> list:
         t0 = datetime.now()
-        print(f"\n[CYBRAIN NETWORK] {'═'*45}")
+        print(f"\n[CYBRAIN NETWORK] {'='*45}")
         print(f"[CYBRAIN NETWORK] Target  : {self.target}")
         print(f"[CYBRAIN NETWORK] Started : {t0.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"[CYBRAIN NETWORK] {'═'*45}")
+        print(f"[CYBRAIN NETWORK] {'='*45}")
 
-        # ── Phase 1 — Reconnaissance ───────────────────────────────────────
+        # ?? Phase 1 - Reconnaissance ???????????????????????????????????????
         print("[CYBRAIN NETWORK] Phase 1: Reconnaissance")
         try:
             recon = NetworkRecon(self.target, self.timeout)
@@ -184,9 +191,9 @@ class NetworkScanner:
                 "message":  (
                     f"<p>Cannot resolve target: <code>{self.target}</code></p>"
                     "<strong>Suggestions:</strong><br>"
-                    "• Verify the hostname/IP is correct<br>"
-                    "• Check DNS resolution<br>"
-                    "• Try: testphp.vulnweb.com or scanme.nmap.org"
+                    "* Verify the hostname/IP is correct<br>"
+                    "* Check DNS resolution<br>"
+                    "* Try: testphp.vulnweb.com or scanme.nmap.org"
                 ),
                 "code": "DNS Resolution Failed",
                 "file": self.target,
@@ -196,7 +203,7 @@ class NetworkScanner:
         open_count = self.recon_data.get("ports", {}).get("total_open", 0)
         print(f"[CYBRAIN NETWORK] {open_count} open ports found")
 
-        # ── Phase 2 — Vulnerability Detection ─────────────────────────────
+        # ?? Phase 2 - Vulnerability Detection ?????????????????????????????
         print("[CYBRAIN NETWORK] Phase 2: Vulnerability Detection")
         try:
             vuln_scanner = NetworkVulnScanner(
@@ -217,23 +224,23 @@ class NetworkScanner:
 
         self._raw_findings = findings
 
-        # ── Report generation ──────────────────────────────────────────────
+        # ?? Report generation ??????????????????????????????????????????????
         try:
             ReportGenerator(self.target, findings, self.report_dir).generate_all()
         except Exception as e:
             print(f"[!] Report generation failed: {e}")
 
-        # ── Format for React UI ────────────────────────────────────────────
+        # ?? Format for React UI ????????????????????????????????????????????
         self.results = [self._format_for_ui(f) for f in findings]
 
         elapsed = (datetime.now() - t0).seconds
         print(
-            f"[CYBRAIN NETWORK] Complete — "
+            f"[CYBRAIN NETWORK] Complete - "
             f"{len(self.results)} findings in {elapsed}s"
         )
         return self.results
 
-    # ── Overall risk ───────────────────────────────────────────────────────
+    # ?? Overall risk ???????????????????????????????????????????????????????
     def _calc_overall_risk(self) -> str:
         """
         Uses raw findings (most accurate).

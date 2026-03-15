@@ -1,12 +1,12 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — Code Vulnerability Analyzer  (v2.0)
+===============================================================
+  CYBRAIN - Code Vulnerability Analyzer  (v2.0)
   Static Application Security Testing (SAST)
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
-  COVERAGE (static patterns — no AI)
-  ────────────────────────────────────
+  COVERAGE (static patterns - no AI)
+  ????????????????????????????????????
   SQL Injection             CWE-89
   XSS                       CWE-79
   Hardcoded Credentials     CWE-798
@@ -29,21 +29,21 @@
   Sensitive Data Logging    CWE-532
 
   IMPROVEMENTS vs original
-  ────────────────────────
-  • 20 vulnerability categories (was 11)
-  • Multi-language support: Python, PHP, JS/TS, Java, C#, Ruby, Go, C/C++
-  • Context-aware patterns (language-specific)
-  • Line-range reporting — up to 3 occurrences per pattern
-  • Confidence scoring (HIGH/MEDIUM/LOW)
-  • AI lazy-load is unchanged (safe if Gemini unavailable)
+  ????????????????????????
+  * 20 vulnerability categories (was 11)
+  * Multi-language support: Python, PHP, JS/TS, Java, C#, Ruby, Go, C/C++
+  * Context-aware patterns (language-specific)
+  * Line-range reporting - up to 3 occurrences per pattern
+  * Confidence scoring (HIGH/MEDIUM/LOW)
+  * AI lazy-load is unchanged (safe if Gemini unavailable)
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
-═══════════════════════════════════════════════════════════════
+===============================================================
 """
 
 import re
 
-# ── Static vulnerability patterns ─────────────────────────────────────────
+# ?? Static vulnerability patterns ?????????????????????????????????????????
 # Each entry: list of (regex_pattern, language_hint_or_None)
 # language_hint = None means applies to all languages
 
@@ -99,7 +99,7 @@ STATIC_PATTERNS: dict = {
             "Python: markupsafe.escape(user_input)\n"
             "JS:     element.textContent = input  (NOT innerHTML)\n"
             "PHP:    htmlspecialchars($in, ENT_QUOTES, 'UTF-8')\n"
-            "React:  Use JSX interpolation {} — avoid dangerouslySetInnerHTML"
+            "React:  Use JSX interpolation {} - avoid dangerouslySetInnerHTML"
         ),
     },
 
@@ -123,7 +123,7 @@ STATIC_PATTERNS: dict = {
             "Python: os.environ.get('DB_PASSWORD')\n"
             "JS:     process.env.DB_PASSWORD\n"
             "Java:   System.getenv('DB_PASSWORD')\n"
-            "Store secrets in .env — add .env to .gitignore"
+            "Store secrets in .env - add .env to .gitignore"
         ),
     },
 
@@ -172,7 +172,7 @@ STATIC_PATTERNS: dict = {
         "fix": (
             "Never pass user input to OS commands:\n"
             "Python: subprocess.run(['cmd', safe_arg], shell=False)\n"
-            "PHP:    escapeshellarg($input) — but prefer not using shell at all\n"
+            "PHP:    escapeshellarg($input) - but prefer not using shell at all\n"
             "JS:     Use child_process.execFile(['cmd', [arg]]) not exec()\n"
             "Apply strict whitelist validation on all inputs"
         ),
@@ -196,7 +196,7 @@ STATIC_PATTERNS: dict = {
             "Use safe deserializers:\n"
             "Python: yaml.safe_load() NOT yaml.load()\n"
             "        Avoid pickle on untrusted data\n"
-            "PHP:    Never unserialize() user input — use json_decode()\n"
+            "PHP:    Never unserialize() user input - use json_decode()\n"
             "Java:   Implement ObjectInputFilter (Java 9+)\n"
             "Use JSON with strict schema validation for all data exchange"
         ),
@@ -266,7 +266,7 @@ STATIC_PATTERNS: dict = {
             "Python: DEBUG = os.environ.get('DEBUG','False') == 'True'\n"
             "Flask:  app.run(debug=False)\n"
             "JS:     NODE_ENV=production\n"
-            "Never hard-code debug=True — always use environment variable"
+            "Never hard-code debug=True - always use environment variable"
         ),
     },
 
@@ -409,7 +409,7 @@ STATIC_PATTERNS: dict = {
             (r'\.updateAttributes\s*\(.*?params',   "rb"),
         ],
         "fix": (
-            "Use explicit field allowlists — never bind raw request to model:\n"
+            "Use explicit field allowlists - never bind raw request to model:\n"
             "Django: UserForm(request.POST, fields=['username','email'])\n"
             "Rails:  params.require(:user).permit(:username, :email)\n"
             "Laravel: $request->only(['username', 'email'])\n"
@@ -488,7 +488,7 @@ class CodeAnalyzer:
     def __init__(self):
         self._agent = None
 
-    # ── AI lazy load ───────────────────────────────────────────────────────
+    # ?? AI lazy load ???????????????????????????????????????????????????????
     def _get_agent(self):
         if self._agent is not None:
             return self._agent
@@ -500,7 +500,7 @@ class CodeAnalyzer:
             print(f"[CODE ANALYZER] AI agent unavailable: {e}")
             return None
 
-    # ── Language detection ─────────────────────────────────────────────────
+    # ?? Language detection ?????????????????????????????????????????????????
     def _detect_language(self, filename: str) -> str:
         ext = filename.rsplit(".", 1)[-1].lower()
         return {
@@ -539,11 +539,11 @@ class CodeAnalyzer:
             "Go":           "go",
         }.get(language, "")
 
-    # ── Static analysis ────────────────────────────────────────────────────
+    # ?? Static analysis ????????????????????????????????????????????????????
     def _static_analysis(self, content: str, lines: list,
                           filename: str, language: str) -> list:
         """
-        Pure regex analysis — no network, no AI.
+        Pure regex analysis - no network, no AI.
         Returns up to 3 occurrences per vulnerability category.
         """
         findings = []
@@ -574,14 +574,14 @@ class CodeAnalyzer:
                     except Exception:
                         pass
                 if hits:
-                    break  # Found at least one hit for this vuln — skip remaining patterns
+                    break  # Found at least one hit for this vuln - skip remaining patterns
 
-        # Sort CRITICAL → LOW
+        # Sort CRITICAL -> LOW
         order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
         findings.sort(key=lambda f: order.get(f.get("severity", "LOW"), 9))
         return findings
 
-    # ── UI formatter ───────────────────────────────────────────────────────
+    # ?? UI formatter ???????????????????????????????????????????????????????
     def _format_for_ui(self, findings: list, filename: str) -> list:
         return [{
             "severity": f["severity"],
@@ -607,7 +607,7 @@ class CodeAnalyzer:
             "file": filename,
         } for f in findings]
 
-    # ── Main analysis entry point ──────────────────────────────────────────
+    # ?? Main analysis entry point ??????????????????????????????????????????
     def analyze(self, content: str, filename: str,
                 use_ai: bool = True) -> dict:
         """
@@ -618,10 +618,10 @@ class CodeAnalyzer:
         language = self._detect_language(filename)
         lines    = content.splitlines()
 
-        # Phase 1 — Static
+        # Phase 1 - Static
         static = self._static_analysis(content, lines, filename, language)
 
-        # Phase 2 — AI (lazy, optional)
+        # Phase 2 - AI (lazy, optional)
         ai_result = None
         if use_ai:
             try:

@@ -1,27 +1,29 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — Network Reconnaissance Module  (v2.0)
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+===============================================================
+  CYBRAIN - Network Reconnaissance Module  (v2.0)
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
   IMPROVEMENTS vs original
-  ────────────────────────
-  • 80+ ports in scanner (was 60)
-  • Service banner enhanced — SSL/TLS ports probed with ssl module
-  • HTTP banner extraction preserves Server + X-Powered-By headers
-  • nmap fallback: tries nmap, silently falls back to socket scanner
-  • IPv6 awareness (socket.AF_INET6 probe)
-  • Whois stub (ARIN/RIPE API — no external binary needed)
-  • Concurrent port scan timeout reduced to 1.5 s for speed
-  • All subprocess calls use full arg lists (no shell=True)
-  • OS fingerprinting reads banners first, TTL as fallback
+  ????????????????????????
+  * 80+ ports in scanner (was 60)
+  * Service banner enhanced - SSL/TLS ports probed with ssl module
+  * HTTP banner extraction preserves Server + X-Powered-By headers
+  * nmap fallback: tries nmap, silently falls back to socket scanner
+  * IPv6 awareness (socket.AF_INET6 probe)
+  * Whois stub (ARIN/RIPE API - no external binary needed)
+  * Concurrent port scan timeout reduced to 1.5 s for speed
+  * All subprocess calls use full arg lists (no shell=True)
+  * OS fingerprinting reads banners first, TTL as fallback
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
-═══════════════════════════════════════════════════════════════
+===============================================================
 """
 
 import re
 import ssl
+import sys
+import io
 import json
 import socket
 import platform
@@ -29,7 +31,12 @@ import subprocess
 import concurrent.futures
 from datetime import datetime
 
-# ── Port → service name map (80+ entries) ─────────────────────────────────
+# Prevent UnicodeEncodeError on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+# ?? Port -> service name map (80+ entries) ?????????????????????????????????
 COMMON_PORTS = {
     20:    "FTP-Data",
     21:    "FTP",
@@ -120,13 +127,13 @@ COMMON_PORTS = {
     9600:  "Omron-FINS",
 }
 
-# ── Ports that support SSL/TLS ─────────────────────────────────────────────
+# ?? Ports that support SSL/TLS ?????????????????????????????????????????????
 TLS_PORTS = {443, 465, 636, 990, 993, 995, 8443, 2376}
 
 
 class NetworkRecon:
     """
-    Phase 1 — Reconnaissance.
+    Phase 1 - Reconnaissance.
     Gathers: DNS, IP, open ports, service banners,
              OS fingerprint, optional nmap deep scan.
     """
@@ -136,7 +143,7 @@ class NetworkRecon:
         self.timeout = timeout
         self.results: dict = {}
 
-    # ── DNS RESOLUTION ─────────────────────────────────────────────────────
+    # ?? DNS RESOLUTION ?????????????????????????????????????????????????????
     def resolve_target(self) -> dict:
         """Forward + reverse DNS resolution."""
         info: dict = {
@@ -177,7 +184,7 @@ class NetworkRecon:
         self.results["dns"] = info
         return info
 
-    # ── PORT SCANNING ──────────────────────────────────────────────────────
+    # ?? PORT SCANNING ??????????????????????????????????????????????????????
     def scan_ports(self) -> dict:
         """
         Parallel TCP connect scan using Python sockets.
@@ -227,14 +234,14 @@ class NetworkRecon:
         }
         return self.results["ports"]
 
-    # ── BANNER GRABBING ────────────────────────────────────────────────────
+    # ?? BANNER GRABBING ????????????????????????????????????????????????????
     def _grab_banner(self, ip: str, port: int,
                      timeout: float = 2.0) -> str | None:
         """
         Grab service banner.
-        • TLS ports  → wrap with ssl.SSLContext
-        • HTTP ports → send HEAD request, extract Server header
-        • Others     → read first 1 KB
+        * TLS ports  -> wrap with ssl.SSLContext
+        * HTTP ports -> send HEAD request, extract Server header
+        * Others     -> read first 1 KB
         """
         try:
             if port in TLS_PORTS:
@@ -243,7 +250,7 @@ class NetworkRecon:
                 ctx.verify_mode    = ssl.CERT_NONE
                 raw = socket.create_connection((ip, port), timeout=timeout)
                 conn = ctx.wrap_socket(raw, server_hostname=ip)
-                banner = f"SSL/TLS — {conn.version()} — {conn.cipher()[0]}"
+                banner = f"SSL/TLS - {conn.version()} - {conn.cipher()[0]}"
                 # Try HTTP HEAD over TLS
                 try:
                     conn.sendall(b"HEAD / HTTP/1.0\r\nHost: " + ip.encode() + b"\r\n\r\n")
@@ -278,7 +285,7 @@ class NetworkRecon:
                         parts.append(f"{h.title()}: {headers[h]}")
                 return " | ".join(parts) if parts else data.splitlines()[0][:200]
 
-            # Generic — read banner
+            # Generic - read banner
             data = sock.recv(1024).decode(errors="ignore").strip()
             sock.close()
             return data[:200] if data else None
@@ -286,7 +293,7 @@ class NetworkRecon:
         except Exception:
             return None
 
-    # ── OS FINGERPRINTING ──────────────────────────────────────────────────
+    # ?? OS FINGERPRINTING ??????????????????????????????????????????????????
     def fingerprint_os(self) -> dict:
         """
         OS detection order:
@@ -303,11 +310,11 @@ class NetworkRecon:
         ]).lower()
 
         os_sigs = [
-            (["ubuntu"],                     "Linux — Ubuntu"),
-            (["debian"],                     "Linux — Debian"),
-            (["centos", "rhel", "red hat"],  "Linux — CentOS/RHEL"),
-            (["fedora"],                     "Linux — Fedora"),
-            (["alpine"],                     "Linux — Alpine"),
+            (["ubuntu"],                     "Linux - Ubuntu"),
+            (["debian"],                     "Linux - Debian"),
+            (["centos", "rhel", "red hat"],  "Linux - CentOS/RHEL"),
+            (["fedora"],                     "Linux - Fedora"),
+            (["alpine"],                     "Linux - Alpine"),
             (["windows", "iis", "microsoft"],"Windows Server"),
             (["freebsd"],                    "FreeBSD"),
             (["openbsd"],                    "OpenBSD"),
@@ -330,18 +337,18 @@ class NetworkRecon:
                     else ["ping", "-c", "1", "-W", "3", target_ip]
                 )
                 proc = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=8
+                    cmd, capture_output=True, text=True, errors="replace", timeout=8
                 )
                 m = re.search(r"ttl[=\s]+(\d+)", proc.stdout, re.IGNORECASE)
                 if m:
                     ttl = int(m.group(1))
                     info["ttl"] = ttl
                     if ttl <= 64:
-                        info["os"] = "Linux/Unix (TTL ≤64)"
+                        info["os"] = "Linux/Unix (TTL <=64)"
                     elif ttl <= 128:
-                        info["os"] = "Windows (TTL ≤128)"
+                        info["os"] = "Windows (TTL <=128)"
                     elif ttl <= 255:
-                        info["os"] = "Cisco/Network Device (TTL ≤255)"
+                        info["os"] = "Cisco/Network Device (TTL <=255)"
                     info["confidence"] = "medium"
                     info["method"]     = "TTL"
             except Exception:
@@ -350,7 +357,7 @@ class NetworkRecon:
         self.results["os"] = info
         return info
 
-    # ── NMAP DEEP SCAN (optional) ──────────────────────────────────────────
+    # ?? NMAP DEEP SCAN (optional) ??????????????????????????????????????????
     def run_nmap(self, flags: str = "-sV --open -T4") -> dict:
         """
         Run nmap if available. Returns structured parsed output.
@@ -358,7 +365,8 @@ class NetworkRecon:
         """
         try:
             check = subprocess.run(
-                ["which", "nmap"], capture_output=True, text=True
+                ["where", "nmap"] if platform.system().lower() == "windows" else ["which", "nmap"], 
+                capture_output=True, text=True, errors="replace"
             )
             if not check.stdout.strip():
                 return {
@@ -372,7 +380,7 @@ class NetworkRecon:
             print(f"[NMAP] {' '.join(cmd)}")
 
             proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=120
+                cmd, capture_output=True, text=True, errors="replace", timeout=120
             )
             return {
                 "available": True,
@@ -403,7 +411,7 @@ class NetworkRecon:
                 parsed["os"] = m2.group(1)
         return parsed
 
-    # ── TRACEROUTE ─────────────────────────────────────────────────────────
+    # ?? TRACEROUTE ?????????????????????????????????????????????????????????
     def traceroute(self) -> dict:
         """Map network path to target."""
         target_ip = self.results.get("dns", {}).get("ip", self.target)
@@ -414,7 +422,7 @@ class NetworkRecon:
                 else ["traceroute", "-m", "15", "-w", "2", target_ip]
             )
             proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=60
+                cmd, capture_output=True, text=True, errors="replace", timeout=60
             )
             hops = []
             for line in proc.stdout.splitlines()[1:]:
@@ -425,14 +433,14 @@ class NetworkRecon:
         except Exception as e:
             return {"error": str(e)}
 
-    # ── HELPERS ────────────────────────────────────────────────────────────
+    # ?? HELPERS ????????????????????????????????????????????????????????????
     def _resolve_ip(self, host: str) -> str:
         try:
             return socket.gethostbyname(host)
         except Exception:
             return host
 
-    # ── FULL RUN ───────────────────────────────────────────────────────────
+    # ?? FULL RUN ???????????????????????????????????????????????????????????
     def run_all(self) -> dict:
         print(f"[RECON] Starting on {self.target}...")
         self.resolve_target()
@@ -440,6 +448,6 @@ class NetworkRecon:
         self.scan_ports()
         self.fingerprint_os()
         open_count = self.results.get("ports", {}).get("total_open", 0)
-        print(f"[RECON] Done — {open_count} open ports, "
+        print(f"[RECON] Done - {open_count} open ports, "
               f"OS: {self.results.get('os', {}).get('os', 'Unknown')}")
         return self.results

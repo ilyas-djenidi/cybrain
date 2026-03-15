@@ -1,47 +1,47 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — Apache Misconfiguration Detector  (v2.0)
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+===============================================================
+  CYBRAIN - Apache Misconfiguration Detector  (v2.0)
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
   CHECKS
-  ──────
+  ??????
   CA8   ProxyPass inside <Directory> block
   DEP   Deprecated directives (Order, Allow, Deny)
   SYN   Syntax errors (unclosed / mismatched tags)
-  MOD   Module dependency issues (mod_ssl, mod_rewrite…)
+  MOD   Module dependency issues (mod_ssl, mod_rewrite...)
   SEC   Security hardening rules (20+ checks):
-        • Directory listing (Indexes)
-        • Server signature / token disclosure
-        • Weak SSL protocols (SSLv2/3, TLS 1.0/1.1)
-        • Weak SSL cipher suites (NULL, EXPORT, RC4…)
-        • TRACE method enabled
-        • Missing security headers (CSP, HSTS, X-Frame…)
-        • LimitRequestBody = 0 (DoS risk)
-        • Timeout too large
-        • FollowSymLinks without SymLinksIfOwnerMatch
-        • Expose PHP version (expose_php = On)
-        • AllowOverride All (too permissive)
-        • Missing mod_security
-        • HTTP/2 push proxyPass leak
-        • Cleartext passwords in config
-        • Open CORS wildcard
-        • Missing access log
-        • Default error documents
-        • CGI scripts enabled
-        • Deprecated mod_php
+        * Directory listing (Indexes)
+        * Server signature / token disclosure
+        * Weak SSL protocols (SSLv2/3, TLS 1.0/1.1)
+        * Weak SSL cipher suites (NULL, EXPORT, RC4...)
+        * TRACE method enabled
+        * Missing security headers (CSP, HSTS, X-Frame...)
+        * LimitRequestBody = 0 (DoS risk)
+        * Timeout too large
+        * FollowSymLinks without SymLinksIfOwnerMatch
+        * Expose PHP version (expose_php = On)
+        * AllowOverride All (too permissive)
+        * Missing mod_security
+        * HTTP/2 push proxyPass leak
+        * Cleartext passwords in config
+        * Open CORS wildcard
+        * Missing access log
+        * Default error documents
+        * CGI scripts enabled
+        * Deprecated mod_php
 
   IMPROVEMENTS vs original
-  ────────────────────────
-  • 20+ security checks (was 10)
-  • Severity normalised to CRITICAL/HIGH/MEDIUM/LOW
-  • JSON output mode
-  • Multi-file directory scan with summary
-  • .htpasswd default path detection
-  • Duplicate finding suppression
+  ????????????????????????
+  * 20+ security checks (was 10)
+  * Severity normalised to CRITICAL/HIGH/MEDIUM/LOW
+  * JSON output mode
+  * Multi-file directory scan with summary
+  * .htpasswd default path detection
+  * Duplicate finding suppression
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
-═══════════════════════════════════════════════════════════════
+===============================================================
 """
 
 import re
@@ -49,7 +49,7 @@ import os
 import sys
 import json
 
-# ── Severity normalisation map ─────────────────────────────────────────────
+# ?? Severity normalisation map ?????????????????????????????????????????????
 _SEV_NORM = {
     "error":   "CRITICAL", "Error":   "CRITICAL",
     "high":    "HIGH",     "High":    "HIGH",
@@ -75,7 +75,7 @@ class ApacheMisconfigDetector:
         self.files_scanned:     int  = 0
         self._seen: set = set()   # dedup (file, line, code)
 
-    # ── Internal helpers ───────────────────────────────────────────────────
+    # ?? Internal helpers ???????????????????????????????????????????????????
 
     def _add(self, file_path: str, line, code: str,
              severity: str, message: str):
@@ -101,7 +101,7 @@ class ApacheMisconfigDetector:
             pass
         return "-"
 
-    # ── Public scan API ────────────────────────────────────────────────────
+    # ?? Public scan API ????????????????????????????????????????????????????
 
     def scan_content(self, content: str, source_name: str = "Input"):
         """Scan a string of Apache config content."""
@@ -132,7 +132,7 @@ class ApacheMisconfigDetector:
                         fname.startswith("apache2")):
                     self.scan_file(os.path.join(root, fname))
 
-    # ── CA8: ProxyPass inside <Directory> ─────────────────────────────────
+    # ?? CA8: ProxyPass inside <Directory> ?????????????????????????????????
     def _check_ca8_proxypass_in_directory(self, fp: str, content: str, lines: list):
         dir_re   = re.compile(r"<Directory\s+[^>]+>(.*?)</Directory>",
                                re.DOTALL | re.IGNORECASE)
@@ -145,7 +145,7 @@ class ApacheMisconfigDetector:
                           "<Directory> section. Move it to a <Location> "
                           "or <VirtualHost> context.")
 
-    # ── Deprecated directives (Apache 2.4) ────────────────────────────────
+    # ?? Deprecated directives (Apache 2.4) ????????????????????????????????
     def _check_deprecated_directives(self, fp: str, content: str, lines: list):
         deprecated = {
             "Order":  "Use 'Require all granted/denied' instead.",
@@ -163,7 +163,7 @@ class ApacheMisconfigDetector:
                               f"Directive '{kw}' is deprecated in Apache 2.4. "
                               f"{note}")
 
-    # ── Syntax errors ──────────────────────────────────────────────────────
+    # ?? Syntax errors ??????????????????????????????????????????????????????
     def _check_syntax_errors(self, fp: str, content: str, lines: list):
         open_tags: list = []
         tag_re = re.compile(r"^\s*<(/?)(\w+)([^>]*)>", re.IGNORECASE)
@@ -193,7 +193,7 @@ class ApacheMisconfigDetector:
             self._add(fp, line_num, "SYNTAX", "Error",
                       f"Unclosed tag <{tag_name}>.")
 
-    # ── Module dependency checks ───────────────────────────────────────────
+    # ?? Module dependency checks ???????????????????????????????????????????
     def _check_module_dependencies(self, fp: str, content: str, lines: list):
         deps = [
             ("SSLEngine On",     "mod_ssl",       "LoadModule ssl_module"),
@@ -210,7 +210,7 @@ class ApacheMisconfigDetector:
                               f"'{directive}' requires {module} but "
                               f"'{load_str}' was not found in this config.")
 
-    # ── Security hardening (20+ rules) ────────────────────────────────────
+    # ?? Security hardening (20+ rules) ????????????????????????????????????
     def _check_security_hardening(self, fp: str, content: str, lines: list):
         is_main = any(
             k in fp.lower()
@@ -283,7 +283,7 @@ class ApacheMisconfigDetector:
             "X-Content-Type-Options": ("MISSING_HEADER", "Medium",
                 "Prevents MIME-type sniffing."),
             "Strict-Transport-Security": ("MISSING_HEADER", "High",
-                "Forces HTTPS — prevents SSL stripping."),
+                "Forces HTTPS - prevents SSL stripping."),
             "Referrer-Policy": ("MISSING_HEADER", "Low",
                 "Controls referrer information leakage."),
         }
@@ -296,7 +296,7 @@ class ApacheMisconfigDetector:
                               f"{desc} "
                               f"Fix: Header always set {header} "<value>"")
 
-        # 7. LimitRequestBody = 0 (unlimited — DoS risk)
+        # 7. LimitRequestBody = 0 (unlimited - DoS risk)
         if re.search(r"^\s*LimitRequestBody\s+0\b",
                       content, re.MULTILINE | re.IGNORECASE):
             ln = self._find_line(content, r"LimitRequestBody\s+0")
@@ -312,7 +312,7 @@ class ApacheMisconfigDetector:
             if int(tm.group(1)) > 300:
                 ln = self._find_line(content, r"Timeout\s+")
                 self._add(fp, ln, "DOS_RISK", "Low",
-                          f"Timeout is {tm.group(1)}s — larger than 300s. "
+                          f"Timeout is {tm.group(1)}s - larger than 300s. "
                           "Slowloris DoS attack risk. Fix: Timeout 60")
         elif is_main:
             self._add(fp, "-", "DOS_RISK", "Low",
@@ -425,7 +425,7 @@ class ApacheMisconfigDetector:
                       content, re.MULTILINE | re.IGNORECASE):
             ln = self._find_line(content, r"SSLVerifyClient")
             self._add(fp, ln, "HARDENING", "Low",
-                      "SSLVerifyClient none — no client certificate verification. "
+                      "SSLVerifyClient none - no client certificate verification. "
                       "Consider requiring client certs for sensitive endpoints.")
 
         # 22. HTTP/2 Server Push enabled (potential CRIME-like risk)
@@ -436,7 +436,7 @@ class ApacheMisconfigDetector:
                       "Can leak sensitive headers in some configurations. "
                       "Disable if not actively used.")
 
-    # ── Results API ────────────────────────────────────────────────────────
+    # ?? Results API ????????????????????????????????????????????????????????
 
     def get_results(self) -> list:
         return self.misconfigurations
@@ -450,7 +450,7 @@ class ApacheMisconfigDetector:
               f"{len(self.misconfigurations)} issue(s) found.\n")
 
         if not self.misconfigurations:
-            print("✓ No misconfigurations detected.")
+            print("[+] No misconfigurations detected.")
             return
 
         print("=" * 60)
@@ -478,7 +478,7 @@ class ApacheMisconfigDetector:
                 print(f"  {sev}: {counts[sev]}")
 
 
-# ── CLI entry point ────────────────────────────────────────────────────────
+# ?? CLI entry point ????????????????????????????????????????????????????????
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python detect_apache_misconf.py <file_or_directory> [--json]")

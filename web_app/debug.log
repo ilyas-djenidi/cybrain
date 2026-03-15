@@ -1,0 +1,27 @@
+2026-03-15 17:57:10,773 INFO: Backend started
+2026-03-15 18:06:37,205 INFO: Backend started
+2026-03-15 18:06:44,250 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 18:06:44,250 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 18:09:01,458 INFO: Backend started
+2026-03-15 18:09:07,783 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 18:09:07,784 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 18:16:39,680 INFO: Backend started
+2026-03-15 18:16:45,863 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 18:16:45,863 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 18:18:56,026 INFO: 127.0.0.1 - - [15/Mar/2026 18:18:56] "POST /scan_network HTTP/1.1" 200 -
+2026-03-15 18:22:36,970 INFO: Backend started
+2026-03-15 18:22:42,868 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 18:22:42,868 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 18:23:26,891 INFO: 127.0.0.1 - - [15/Mar/2026 18:23:26] "POST /scan_network HTTP/1.1" 200 -

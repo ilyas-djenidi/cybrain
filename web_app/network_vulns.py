@@ -1,34 +1,34 @@
 """
-═══════════════════════════════════════════════════════════════
-  CYBRAIN — Network Vulnerability Detection Module  (v2.0)
-  PFE Master 2 — Information Security
-  University of Mohamed Boudiaf, M'sila — Algeria
+===============================================================
+  CYBRAIN - Network Vulnerability Detection Module  (v2.0)
+  PFE Master 2 - Information Security
+  University of Mohamed Boudiaf, M'sila - Algeria
 
   COVERAGE
-  ────────
-  • Dangerous port exposure   (Docker, Memcached, Redis, ES, etc.)
-  • Vulnerable service versions (CVE-mapped)
-  • Unencrypted protocols      (FTP, Telnet, HTTP, POP3, IMAP…)
-  • Anonymous FTP              (live socket test)
-  • Default creds probe        (FTP anonymous only — safe)
-  • Firewall posture analysis
-  • SMB / EternalBlue          (CVE-2017-0144)
-  • RDP / BlueKeep             (CVE-2019-0708)
-  • FTP backdoor               (vsftpd 2.3.4 CVE-2011-2523)
-  • SSH hardening checks
-  • TLS/SSL weakness           (TLS 1.0/1.1 detection via banner)
-  • Database exposure          (MySQL, PostgreSQL, MSSQL, Oracle)
-  • NoSQL exposure             (Redis, MongoDB, Elasticsearch…)
-  • Web service checks         (HTTP without TLS)
-  • Management interfaces      (phpMyAdmin, Tomcat, Jenkins…)
-  • SNMP default community     (live UDP probe)
-  • ICS/SCADA ports            (Modbus, S7, MQTT, BACnet)
-  • Telnet login warning
-  • VNC exposure
-  • NFS world-mountable check
+  ????????
+  * Dangerous port exposure   (Docker, Memcached, Redis, ES, etc.)
+  * Vulnerable service versions (CVE-mapped)
+  * Unencrypted protocols      (FTP, Telnet, HTTP, POP3, IMAP...)
+  * Anonymous FTP              (live socket test)
+  * Default creds probe        (FTP anonymous only - safe)
+  * Firewall posture analysis
+  * SMB / EternalBlue          (CVE-2017-0144)
+  * RDP / BlueKeep             (CVE-2019-0708)
+  * FTP backdoor               (vsftpd 2.3.4 CVE-2011-2523)
+  * SSH hardening checks
+  * TLS/SSL weakness           (TLS 1.0/1.1 detection via banner)
+  * Database exposure          (MySQL, PostgreSQL, MSSQL, Oracle)
+  * NoSQL exposure             (Redis, MongoDB, Elasticsearch...)
+  * Web service checks         (HTTP without TLS)
+  * Management interfaces      (phpMyAdmin, Tomcat, Jenkins...)
+  * SNMP default community     (live UDP probe)
+  * ICS/SCADA ports            (Modbus, S7, MQTT, BACnet)
+  * Telnet login warning
+  * VNC exposure
+  * NFS world-mountable check
 
   FOR EDUCATIONAL / AUTHORIZED TESTING ONLY
-═══════════════════════════════════════════════════════════════
+===============================================================
 """
 
 import re
@@ -39,12 +39,12 @@ from datetime import datetime
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# ── Known vulnerable versions ──────────────────────────────────────────────
+# ?? Known vulnerable versions ??????????????????????????????????????????????
 VULNERABLE_VERSIONS = {
     "openssh": [
         ("7.2",  "CVE-2016-6515",  "HIGH",     "Auth bypass via malformed packets"),
         ("6.6",  "CVE-2014-1692",  "HIGH",     "Memory corruption"),
-        ("5.",   "CVE-2010-4478",  "CRITICAL", "OpenSSH 5.x — auth bypass"),
+        ("5.",   "CVE-2010-4478",  "CRITICAL", "OpenSSH 5.x - auth bypass"),
     ],
     "apache": [
         ("2.4.49", "CVE-2021-41773", "CRITICAL", "Path traversal / RCE"),
@@ -60,7 +60,7 @@ VULNERABLE_VERSIONS = {
         ("2.3.4", "CVE-2011-2523", "CRITICAL", "Backdoor command execution"),
     ],
     "openssl": [
-        ("1.0.1", "CVE-2014-0160", "CRITICAL", "Heartbleed — memory leak"),
+        ("1.0.1", "CVE-2014-0160", "CRITICAL", "Heartbleed - memory leak"),
         ("3.0.0", "CVE-2022-0778", "HIGH",     "Infinite loop DoS"),
         ("1.0.2", "CVE-2016-0703", "HIGH",     "DROWN attack"),
     ],
@@ -90,7 +90,7 @@ VULNERABLE_VERSIONS = {
     ],
 }
 
-# ── Dangerous ports with full metadata ────────────────────────────────────
+# ?? Dangerous ports with full metadata ????????????????????????????????????
 DANGEROUS_PORTS: dict = {
     2375: {
         "sev":   "CRITICAL",
@@ -103,7 +103,7 @@ DANGEROUS_PORTS: dict = {
         "fix":   (
             "Remove -H tcp://0.0.0.0:2375 from dockerd options.\n"
             "Use TLS socket (port 2376) only.\n"
-            "docker run --rm -v /:/host alpine chroot /host — is trivial."
+            "docker run --rm -v /:/host alpine chroot /host - is trivial."
         ),
         "cve":  "CVE-2019-5736", "cvss": "10.0",
     },
@@ -136,7 +136,7 @@ DANGEROUS_PORTS: dict = {
         "title": "Memcached Exposed (Amplification Attack Risk)",
         "desc":  (
             "Memcached on 11211 accessible without auth. "
-            "Used in DDoS amplification attacks (51,000× factor). "
+            "Used in DDoS amplification attacks (51,000x factor). "
             "All cached data readable and writable."
         ),
         "fix":   "Bind to 127.0.0.1. Block UDP 11211 at firewall. Enable SASL.",
@@ -233,7 +233,7 @@ DANGEROUS_PORTS: dict = {
     4444: {
         "sev":   "CRITICAL",
         "title": "Metasploit Default Port Open",
-        "desc":  "Port 4444 open — default Metasploit meterpreter handler. Possible active compromise.",
+        "desc":  "Port 4444 open - default Metasploit meterpreter handler. Possible active compromise.",
         "fix":   "Investigate immediately. Check for unauthorized processes. Run forensics.",
         "cve":  "CWE-200", "cvss": "10.0",
     },
@@ -267,22 +267,22 @@ DANGEROUS_PORTS: dict = {
     },
 }
 
-# ── Unencrypted protocol recommendations ──────────────────────────────────
+# ?? Unencrypted protocol recommendations ??????????????????????????????????
 UNENCRYPTED_PORTS: dict = {
-    21:  "FTP — credentials in plaintext. Replace with SFTP (port 22) or FTPS.",
-    23:  "Telnet — all traffic unencrypted. Replace with SSH immediately.",
-    25:  "SMTP — enforce STARTTLS. Reject plain SMTP externally.",
-    80:  "HTTP — redirect to HTTPS. Get free cert: certbot --nginx.",
-    110: "POP3 — use POP3S (port 995).",
-    143: "IMAP — use IMAPS (port 993).",
-    119: "NNTP — plaintext news protocol. Use NNTPS (563).",
-    514: "Syslog UDP — plaintext log data. Use syslog-ng with TLS.",
+    21:  "FTP - credentials in plaintext. Replace with SFTP (port 22) or FTPS.",
+    23:  "Telnet - all traffic unencrypted. Replace with SSH immediately.",
+    25:  "SMTP - enforce STARTTLS. Reject plain SMTP externally.",
+    80:  "HTTP - redirect to HTTPS. Get free cert: certbot --nginx.",
+    110: "POP3 - use POP3S (port 995).",
+    143: "IMAP - use IMAPS (port 993).",
+    119: "NNTP - plaintext news protocol. Use NNTPS (563).",
+    514: "Syslog UDP - plaintext log data. Use syslog-ng with TLS.",
 }
 
 
 class NetworkVulnScanner:
     """
-    Phase 2 — Vulnerability Detection.
+    Phase 2 - Vulnerability Detection.
     Analyses open ports from NetworkRecon for security issues.
     """
 
@@ -293,7 +293,7 @@ class NetworkVulnScanner:
         self.findings: list = []
         self._ip      = recon_results.get("dns", {}).get("ip", target)
 
-    # ── Finding helper ─────────────────────────────────────────────────────
+    # ?? Finding helper ?????????????????????????????????????????????????????
     def _add(self, severity: str, title: str, description: str,
              port=None, service: str = "", evidence: str = "",
              fix: str = "", cve: str = "", cvss: str = ""):
@@ -311,7 +311,7 @@ class NetworkVulnScanner:
             "category":    "Network",
         })
 
-    # ── MAIN SCAN ──────────────────────────────────────────────────────────
+    # ?? MAIN SCAN ??????????????????????????????????????????????????????????
     def scan_all(self) -> list:
         print("[NETWORK VULN] Starting checks...")
         open_ports = self.recon.get("ports", {}).get("open", [])
@@ -342,21 +342,21 @@ class NetworkVulnScanner:
         self._check_nfs(open_ports)
         self._check_firewall_posture(open_ports)
 
-        print(f"[NETWORK VULN] Done — {len(self.findings)} issues found.")
+        print(f"[NETWORK VULN] Done - {len(self.findings)} issues found.")
         return self.findings
 
-    # ── DANGEROUS PORTS ────────────────────────────────────────────────────
+    # ?? DANGEROUS PORTS ????????????????????????????????????????????????????
     def _check_dangerous_ports(self, port: int, service: str, banner: str):
         if port in DANGEROUS_PORTS:
             d = DANGEROUS_PORTS[port]
             self._add(
                 d["sev"], d["title"], d["desc"],
                 port=port, service=service,
-                evidence=f"Port {port}/tcp open — {service}",
+                evidence=f"Port {port}/tcp open - {service}",
                 fix=d["fix"], cve=d["cve"], cvss=d["cvss"],
             )
 
-    # ── VERSION CVE MATCHING ───────────────────────────────────────────────
+    # ?? VERSION CVE MATCHING ???????????????????????????????????????????????
     def _check_service_version(self, port: int, service: str, banner: str):
         if not banner:
             return
@@ -383,21 +383,21 @@ class NetworkVulnScanner:
                         cve=cve, cvss="9.8",
                     )
 
-    # ── UNENCRYPTED PROTOCOLS ──────────────────────────────────────────────
+    # ?? UNENCRYPTED PROTOCOLS ??????????????????????????????????????????????
     def _check_unencrypted_services(self, port: int, service: str):
         if port in UNENCRYPTED_PORTS:
             self._add(
                 "MEDIUM",
-                f"Unencrypted Protocol — Port {port} ({service})",
+                f"Unencrypted Protocol - Port {port} ({service})",
                 f"{service} transmits credentials and data in plaintext. "
                 "Any network observer can capture all traffic (Wireshark).",
                 port=port, service=service,
-                evidence=f"Port {port}/tcp open — no encryption",
+                evidence=f"Port {port}/tcp open - no encryption",
                 fix=UNENCRYPTED_PORTS[port],
                 cve="CWE-319", cvss="5.9",
             )
 
-    # ── TLS WEAKNESS DETECTION ─────────────────────────────────────────────
+    # ?? TLS WEAKNESS DETECTION ?????????????????????????????????????????????
     def _check_tls_weakness(self, port: int, banner: str):
         if not banner:
             return
@@ -423,7 +423,7 @@ class NetworkVulnScanner:
                 cve="CWE-326", cvss="4.3",
             )
 
-    # ── FTP ────────────────────────────────────────────────────────────────
+    # ?? FTP ????????????????????????????????????????????????????????????????
     def _check_ftp(self, open_ports: list):
         for p in open_ports:
             if p["port"] != 21:
@@ -461,7 +461,7 @@ class NetworkVulnScanner:
                         "FTP server allows anonymous access. "
                         "Anyone can connect without credentials and read/write files.",
                         port=21, service="FTP",
-                        evidence="USER anonymous → 230 Login successful",
+                        evidence="USER anonymous -> 230 Login successful",
                         fix="Disable in vsftpd.conf: anonymous_enable=NO",
                         cve="CWE-287", cvss="7.5",
                     )
@@ -469,7 +469,7 @@ class NetworkVulnScanner:
                 pass
             break
 
-    # ── SSH ────────────────────────────────────────────────────────────────
+    # ?? SSH ????????????????????????????????????????????????????????????????
     def _check_ssh(self, open_ports: list):
         for p in open_ports:
             if p["port"] != 22:
@@ -485,7 +485,7 @@ class NetworkVulnScanner:
                     if major < 8.0:
                         self._add(
                             "MEDIUM",
-                            f"OpenSSH {version} — Outdated (< 8.0)",
+                            f"OpenSSH {version} - Outdated (< 8.0)",
                             f"OpenSSH {version} may have known vulnerabilities. 8.0+ recommended.",
                             port=22, service="SSH",
                             evidence=f"Banner: {banner[:100]}",
@@ -498,7 +498,7 @@ class NetworkVulnScanner:
             # Brute-force exposure warning
             self._add(
                 "MEDIUM",
-                "SSH Port 22 Exposed — Brute Force Risk",
+                "SSH Port 22 Exposed - Brute Force Risk",
                 "SSH on 22 is constantly scanned by automated bots. "
                 "Brute-force and credential stuffing attacks are likely.",
                 port=22, service="SSH",
@@ -506,7 +506,7 @@ class NetworkVulnScanner:
                 fix=(
                     "1. Change port from 22 to a high port.\n"
                     "2. PermitRootLogin no\n"
-                    "3. PasswordAuthentication no — use key-based auth.\n"
+                    "3. PasswordAuthentication no - use key-based auth.\n"
                     "4. Install fail2ban.\n"
                     "5. Restrict to known IPs: AllowUsers user@trusted_ip"
                 ),
@@ -514,7 +514,7 @@ class NetworkVulnScanner:
             )
             break
 
-    # ── SMB / ETERNALBLUE ──────────────────────────────────────────────────
+    # ?? SMB / ETERNALBLUE ??????????????????????????????????????????????????
     def _check_smb(self, open_ports: list):
         port_nums = [p["port"] for p in open_ports]
         if 445 not in port_nums:
@@ -541,9 +541,9 @@ class NetworkVulnScanner:
             if len(response) > 4:
                 self._add(
                     "CRITICAL",
-                    "SMB Service Responding — EternalBlue Risk (CVE-2017-0144)",
+                    "SMB Service Responding - EternalBlue Risk (CVE-2017-0144)",
                     "SMB port 445 is open and responding. If SMBv1 is enabled, "
-                    "vulnerable to EternalBlue (MS17-010) — exploited by WannaCry/NotPetya. "
+                    "vulnerable to EternalBlue (MS17-010) - exploited by WannaCry/NotPetya. "
                     "Unauthenticated RCE possible.",
                     port=445, service="SMB",
                     evidence=f"Port 445 + SMB negotiate response ({len(response)} bytes)",
@@ -558,18 +558,18 @@ class NetworkVulnScanner:
         except Exception:
             pass
 
-    # ── RDP / BLUEKEEP ─────────────────────────────────────────────────────
+    # ?? RDP / BLUEKEEP ?????????????????????????????????????????????????????
     def _check_rdp(self, open_ports: list):
         port_nums = [p["port"] for p in open_ports]
         if 3389 not in port_nums:
             return
         self._add(
             "CRITICAL",
-            "RDP Exposed — BlueKeep / DejaBlue Risk",
+            "RDP Exposed - BlueKeep / DejaBlue Risk",
             "RDP port 3389 is publicly accessible.\n"
-            "• BlueKeep (CVE-2019-0708) — pre-auth RCE\n"
-            "• DejaBlue (CVE-2019-1181/1182) — pre-auth RCE\n"
-            "• Constant brute-force and credential stuffing\n"
+            "* BlueKeep (CVE-2019-0708) - pre-auth RCE\n"
+            "* DejaBlue (CVE-2019-1181/1182) - pre-auth RCE\n"
+            "* Constant brute-force and credential stuffing\n"
             "Attackers actively scan for exposed RDP.",
             port=3389, service="RDP",
             evidence="Port 3389/tcp open",
@@ -583,13 +583,13 @@ class NetworkVulnScanner:
             cve="CVE-2019-0708", cvss="9.8",
         )
 
-    # ── TELNET ─────────────────────────────────────────────────────────────
+    # ?? TELNET ?????????????????????????????????????????????????????????????
     def _check_telnet(self, open_ports: list):
         for p in open_ports:
             if p["port"] == 23:
                 self._add(
                     "CRITICAL",
-                    "Telnet Service Active — Replace with SSH",
+                    "Telnet Service Active - Replace with SSH",
                     "Telnet transmits all data including passwords in plaintext. "
                     "Trivially interceptable with Wireshark on any network segment.",
                     port=23, service="Telnet",
@@ -599,20 +599,20 @@ class NetworkVulnScanner:
                 )
                 break
 
-    # ── VNC ────────────────────────────────────────────────────────────────
+    # ?? VNC ????????????????????????????????????????????????????????????????
     def _check_vnc(self, open_ports: list):
         for p in open_ports:
             if p["port"] == 5900:
                 banner = p.get("banner", "") or ""
-                # VNC no-auth check — RFB protocol version in banner
+                # VNC no-auth check - RFB protocol version in banner
                 no_auth = "rfb" in banner.lower() and (
                     "003.003" in banner or "003.007" in banner
                 )
                 self._add(
                     "HIGH" if not no_auth else "CRITICAL",
-                    "VNC Remote Desktop Exposed" + (" — No Auth" if no_auth else ""),
+                    "VNC Remote Desktop Exposed" + (" - No Auth" if no_auth else ""),
                     "VNC on 5900 is publicly accessible. "
-                    + ("RFB version suggests no-auth mode — anyone can connect. " if no_auth else "")
+                    + ("RFB version suggests no-auth mode - anyone can connect. " if no_auth else "")
                     + "Brute-forceable. Full desktop control possible.",
                     port=5900, service="VNC",
                     evidence=f"Port 5900/tcp open. Banner: {banner[:60]}",
@@ -625,7 +625,7 @@ class NetworkVulnScanner:
                 )
                 break
 
-    # ── DATABASE EXPOSURE ──────────────────────────────────────────────────
+    # ?? DATABASE EXPOSURE ??????????????????????????????????????????????????
     def _check_database_exposure(self, open_ports: list):
         db_ports = {
             3306: "MySQL/MariaDB",
@@ -643,7 +643,7 @@ class NetworkVulnScanner:
                     "Database servers should never be directly internet-accessible. "
                     "Risk: data breach, brute force, SQL injection directly on the engine.",
                     port=p["port"], service=name,
-                    evidence=f"Port {p['port']}/tcp open — {name}",
+                    evidence=f"Port {p['port']}/tcp open - {name}",
                     fix=(
                         f"Bind {name} to 127.0.0.1 in config.\n"
                         "Use firewall to block external access.\n"
@@ -653,7 +653,7 @@ class NetworkVulnScanner:
                     cve="CWE-284", cvss="9.8",
                 )
 
-    # ── NoSQL EXPOSURE ─────────────────────────────────────────────────────
+    # ?? NoSQL EXPOSURE ?????????????????????????????????????????????????????
     def _check_nosql_exposure(self, open_ports: list):
         nosql_ports = {
             6379:  "Redis",
@@ -683,14 +683,14 @@ class NetworkVulnScanner:
                             f"{name} HTTP API returned 200 without credentials. "
                             "All data is readable and writable by anyone.",
                             port=p["port"], service=name,
-                            evidence=f"HTTP GET http://{self._ip}:{p['port']}/ → 200 OK",
+                            evidence=f"HTTP GET http://{self._ip}:{p['port']}/ -> 200 OK",
                             fix=f"Enable {name} security. Bind to localhost. Firewall port.",
                             cve="CWE-284", cvss="10.0",
                         )
                 except Exception:
                     pass
 
-            # Redis — quick PING probe
+            # Redis - quick PING probe
             elif p["port"] == 6379:
                 try:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -706,14 +706,14 @@ class NetworkVulnScanner:
                             "Redis responds to PING without authentication. "
                             "All keys accessible. SSH key / cron job write = OS RCE.",
                             port=6379, service="Redis",
-                            evidence="PING → +PONG (no auth required)",
+                            evidence="PING -> +PONG (no auth required)",
                             fix="requirepass <password> in redis.conf. Bind to 127.0.0.1.",
                             cve="CVE-2022-0543", cvss="10.0",
                         )
                 except Exception:
                     pass
 
-    # ── WEB SERVICES ──────────────────────────────────────────────────────
+    # ?? WEB SERVICES ??????????????????????????????????????????????????????
     def _check_web_services(self, open_ports: list):
         for p in open_ports:
             if p["port"] in (80, 8080, 8000, 8081):
@@ -732,7 +732,7 @@ class NetworkVulnScanner:
                     cve="CWE-319", cvss="7.5",
                 )
 
-    # ── MANAGEMENT INTERFACES ─────────────────────────────────────────────
+    # ?? MANAGEMENT INTERFACES ?????????????????????????????????????????????
     def _check_management_interfaces(self, open_ports: list):
         mgmt_paths = {
             "/phpmyadmin":   "phpMyAdmin",
@@ -762,7 +762,7 @@ class NetworkVulnScanner:
                             f"{name} panel found at {url}. "
                             "Exposed admin interfaces are prime targets.",
                             port=p["port"], service=f"HTTP ({path})",
-                            evidence=f"GET {url} → HTTP {r.status_code}",
+                            evidence=f"GET {url} -> HTTP {r.status_code}",
                             fix=(
                                 "Move admin panels behind VPN.\n"
                                 "Restrict access by IP.\n"
@@ -775,7 +775,7 @@ class NetworkVulnScanner:
                 except Exception:
                     pass
 
-    # ── SNMP DEFAULT COMMUNITY STRING ─────────────────────────────────────
+    # ?? SNMP DEFAULT COMMUNITY STRING ?????????????????????????????????????
     def _check_snmp(self, open_ports: list):
         port_nums = [p["port"] for p in open_ports]
         if 161 not in port_nums:
@@ -803,7 +803,7 @@ class NetworkVulnScanner:
                     "SNMP responds to default 'public' community string. "
                     "Network device info, interfaces, and routing tables are readable.",
                     port=161, service="SNMP",
-                    evidence=f"SNMPv1 GET community='public' → {len(resp)} byte response",
+                    evidence=f"SNMPv1 GET community='public' -> {len(resp)} byte response",
                     fix=(
                         "Change community strings from 'public'/'private'.\n"
                         "Upgrade to SNMPv3 with authentication + encryption.\n"
@@ -814,15 +814,15 @@ class NetworkVulnScanner:
         except Exception:
             pass
 
-    # ── ICS / SCADA ────────────────────────────────────────────────────────
+    # ?? ICS / SCADA ????????????????????????????????????????????????????????
     def _check_ics_ports(self, open_ports: list):
         ics = {
-            502:   ("Modbus",   "CRITICAL", "Industrial control — no auth/encryption"),
-            102:   ("Siemens S7","CRITICAL","PLC programming port — no auth"),
-            47808: ("BACnet",   "HIGH",     "Building automation — HVAC/access control"),
+            502:   ("Modbus",   "CRITICAL", "Industrial control - no auth/encryption"),
+            102:   ("Siemens S7","CRITICAL","PLC programming port - no auth"),
+            47808: ("BACnet",   "HIGH",     "Building automation - HVAC/access control"),
             4840:  ("OPC-UA",   "HIGH",     "Industrial automation protocol"),
-            9600:  ("Omron FINS","CRITICAL","PLC control — no auth"),
-            1883:  ("MQTT",     "HIGH",     "IoT broker — no TLS/auth"),
+            9600:  ("Omron FINS","CRITICAL","PLC control - no auth"),
+            1883:  ("MQTT",     "HIGH",     "IoT broker - no TLS/auth"),
         }
         for p in open_ports:
             if p["port"] in ics:
@@ -833,7 +833,7 @@ class NetworkVulnScanner:
                     f"{proto} on {p['port']} is internet-accessible. {desc}. "
                     "Critical infrastructure protocols were designed for isolated networks.",
                     port=p["port"], service=proto,
-                    evidence=f"Port {p['port']}/tcp open — {proto}",
+                    evidence=f"Port {p['port']}/tcp open - {proto}",
                     fix=(
                         "Isolate ICS/OT network from internet.\n"
                         "Deploy industrial DMZ / Purdue Model architecture.\n"
@@ -843,7 +843,7 @@ class NetworkVulnScanner:
                     cve="CWE-306", cvss="10.0",
                 )
 
-    # ── NFS WORLD-MOUNTABLE ────────────────────────────────────────────────
+    # ?? NFS WORLD-MOUNTABLE ????????????????????????????????????????????????
     def _check_nfs(self, open_ports: list):
         port_nums = [p["port"] for p in open_ports]
         if 2049 not in port_nums:
@@ -856,11 +856,11 @@ class NetworkVulnScanner:
             sock.close()
             self._add(
                 "HIGH",
-                "NFS Port Exposed — World-Mountable Risk",
+                "NFS Port Exposed - World-Mountable Risk",
                 "NFS on 2049 is accessible. Misconfigured NFS exports "
                 "(e.g., /export *(rw)) allow anyone to mount and read/write filesystems.",
                 port=2049, service="NFS",
-                evidence="Port 2049/tcp open — NFS",
+                evidence="Port 2049/tcp open - NFS",
                 fix=(
                     "Restrict NFS exports to specific IPs: /export 192.168.1.0/24(rw)\n"
                     "Never use * in /etc/exports.\n"
@@ -872,7 +872,7 @@ class NetworkVulnScanner:
         except Exception:
             pass
 
-    # ── FIREWALL POSTURE ───────────────────────────────────────────────────
+    # ?? FIREWALL POSTURE ???????????????????????????????????????????????????
     def _check_firewall_posture(self, open_ports: list):
         """Heuristic: if many sensitive ports are open, firewall is likely absent."""
         sensitive = {22, 23, 3306, 5432, 6379, 27017, 9200, 1433, 3389, 445, 5900}
@@ -880,7 +880,7 @@ class NetworkVulnScanner:
         if len(exposed) >= 3:
             self._add(
                 "HIGH",
-                f"Insufficient Firewall — {len(exposed)} Sensitive Ports Exposed",
+                f"Insufficient Firewall - {len(exposed)} Sensitive Ports Exposed",
                 f"Sensitive ports {exposed} are all accessible from the internet. "
                 "A properly configured firewall should block all non-essential ports.",
                 evidence=f"Exposed sensitive ports: {exposed}",
