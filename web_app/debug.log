@@ -113,3 +113,215 @@
 2026-03-15 21:26:05,287 INFO: 127.0.0.1 - - [15/Mar/2026 21:26:05] "POST /analyze_code HTTP/1.1" 200 -
 2026-03-15 21:26:06,094 INFO: 127.0.0.1 - - [15/Mar/2026 21:26:06] "POST /analyze_code HTTP/1.1" 200 -
 2026-03-15 21:26:13,730 INFO: 127.0.0.1 - - [15/Mar/2026 21:26:13] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 21:58:17,319 INFO: Backend started
+2026-03-15 21:58:23,103 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.34:5000
+2026-03-15 21:58:23,103 INFO: [33mPress CTRL+C to quit[0m
+2026-03-15 21:59:09,288 INFO: 127.0.0.1 - - [15/Mar/2026 21:59:09] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 22:02:03,911 INFO: 127.0.0.1 - - [15/Mar/2026 22:02:03] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 22:02:43,089 INFO: 127.0.0.1 - - [15/Mar/2026 22:02:43] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 22:02:53,762 INFO: 127.0.0.1 - - [15/Mar/2026 22:02:53] "POST /analyze_code HTTP/1.1" 200 -
+2026-03-15 22:03:10,917 DEBUG: Starting new HTTPS connection (1): preview.owasp-juice.shop:443
+2026-03-15 22:03:20,174 DEBUG: https://preview.owasp-juice.shop:443 "GET / HTTP/1.1" 200 9082
+2026-03-15 22:03:22,401 DEBUG: https://preview.owasp-juice.shop:443 "GET / HTTP/1.1" 200 None
+2026-03-15 22:03:22,558 DEBUG: Starting new HTTPS connection (2): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,561 DEBUG: Starting new HTTPS connection (3): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,569 DEBUG: Starting new HTTPS connection (4): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,573 DEBUG: Starting new HTTPS connection (5): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,576 DEBUG: Starting new HTTPS connection (6): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,580 DEBUG: Starting new HTTPS connection (7): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,587 DEBUG: Starting new HTTPS connection (8): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,595 DEBUG: Starting new HTTPS connection (9): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,602 DEBUG: Starting new HTTPS connection (10): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,605 DEBUG: Starting new HTTPS connection (11): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,617 DEBUG: Starting new HTTPS connection (12): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,621 DEBUG: Starting new HTTPS connection (13): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,624 DEBUG: Starting new HTTPS connection (14): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,630 DEBUG: Starting new HTTPS connection (15): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,637 DEBUG: Starting new HTTPS connection (16): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,641 DEBUG: Starting new HTTPS connection (17): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,646 DEBUG: Starting new HTTPS connection (18): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,653 DEBUG: Starting new HTTPS connection (19): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,661 DEBUG: Starting new HTTPS connection (20): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,683 DEBUG: Starting new HTTPS connection (21): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,686 DEBUG: Starting new HTTPS connection (22): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,691 DEBUG: Starting new HTTPS connection (23): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,693 DEBUG: Starting new HTTPS connection (24): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,700 DEBUG: Starting new HTTPS connection (25): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,700 DEBUG: Starting new HTTPS connection (26): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,707 DEBUG: Starting new HTTPS connection (27): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,709 DEBUG: Starting new HTTPS connection (28): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,709 DEBUG: Starting new HTTPS connection (29): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,717 DEBUG: Starting new HTTPS connection (30): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,724 DEBUG: Starting new HTTPS connection (31): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,727 DEBUG: Starting new HTTPS connection (32): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,733 DEBUG: Starting new HTTPS connection (33): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,736 DEBUG: Starting new HTTPS connection (34): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,736 DEBUG: Starting new HTTPS connection (35): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,741 DEBUG: Starting new HTTPS connection (36): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,741 DEBUG: Starting new HTTPS connection (37): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,752 DEBUG: Starting new HTTPS connection (38): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,754 DEBUG: Starting new HTTPS connection (39): preview.owasp-juice.shop:443
+2026-03-15 22:03:22,759 DEBUG: Starting new HTTPS connection (40): preview.owasp-juice.shop:443
+2026-03-15 22:03:24,935 DEBUG: https://preview.owasp-juice.shop:443 "GET /.env.local HTTP/1.1" 200 9082
+2026-03-15 22:03:25,558 DEBUG: https://preview.owasp-juice.shop:443 "GET /api/users/1 HTTP/1.1" 401 972
+2026-03-15 22:03:25,769 DEBUG: https://preview.owasp-juice.shop:443 "GET /.env.production HTTP/1.1" 200 None
+2026-03-15 22:03:26,398 DEBUG: https://preview.owasp-juice.shop:443 "GET /.env.backup HTTP/1.1" 200 9082
+2026-03-15 22:03:26,796 DEBUG: Starting new HTTPS connection (41): preview.owasp-juice.shop:443
+2026-03-15 22:03:27,319 DEBUG: https://preview.owasp-juice.shop:443 "GET /backup.sql HTTP/1.1" 200 None
+2026-03-15 22:03:27,376 DEBUG: https://preview.owasp-juice.shop:443 "GET /.gitignore HTTP/1.1" 200 None
+2026-03-15 22:03:27,450 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:27,521 DEBUG: https://preview.owasp-juice.shop:443 "GET /backup.tar.gz HTTP/1.1" 200 9082
+2026-03-15 22:03:27,599 DEBUG: https://preview.owasp-juice.shop:443 "GET /?id=%25gg HTTP/1.1" 200 9082
+2026-03-15 22:03:27,601 DEBUG: https://preview.owasp-juice.shop:443 "GET /dump.sql HTTP/1.1" 200 9082
+2026-03-15 22:03:27,729 DEBUG: https://preview.owasp-juice.shop:443 "GET /config.php HTTP/1.1" 200 None
+2026-03-15 22:03:27,841 DEBUG: https://preview.owasp-juice.shop:443 "GET /database.sql HTTP/1.1" 200 9082
+2026-03-15 22:03:27,886 DEBUG: https://preview.owasp-juice.shop:443 "GET /wp-config.php HTTP/1.1" 200 9082
+2026-03-15 22:03:28,017 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:28,018 DEBUG: https://preview.owasp-juice.shop:443 "GET /settings.py HTTP/1.1" 200 None
+2026-03-15 22:03:28,019 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:28,049 DEBUG: https://preview.owasp-juice.shop:443 "GET /site_backup.zip HTTP/1.1" 200 None
+2026-03-15 22:03:28,154 DEBUG: https://preview.owasp-juice.shop:443 "GET /phpinfo.php HTTP/1.1" 200 None
+2026-03-15 22:03:28,346 DEBUG: https://preview.owasp-juice.shop:443 "GET /debug.php HTTP/1.1" 200 None
+2026-03-15 22:03:28,406 DEBUG: https://preview.owasp-juice.shop:443 "GET /.hg/hgrc HTTP/1.1" 200 None
+2026-03-15 22:03:28,420 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:28,427 DEBUG: https://preview.owasp-juice.shop:443 "GET /php_info.php HTTP/1.1" 200 9082
+2026-03-15 22:03:28,442 DEBUG: https://preview.owasp-juice.shop:443 "GET /server-status HTTP/1.1" 200 None
+2026-03-15 22:03:28,502 DEBUG: https://preview.owasp-juice.shop:443 "GET /nonexistent_xyz_cybrain HTTP/1.1" 200 9082
+2026-03-15 22:03:28,596 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:28,617 DEBUG: https://preview.owasp-juice.shop:443 "GET /server-info HTTP/1.1" 200 9082
+2026-03-15 22:03:28,626 DEBUG: https://preview.owasp-juice.shop:443 "GET /api/user/1 HTTP/1.1" 500 742
+2026-03-15 22:03:28,629 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:28,754 DEBUG: https://preview.owasp-juice.shop:443 "GET /.htaccess HTTP/1.1" 403 239
+2026-03-15 22:03:28,758 DEBUG: https://preview.owasp-juice.shop:443 "GET /web.config HTTP/1.1" 200 None
+2026-03-15 22:03:28,762 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:28,772 DEBUG: https://preview.owasp-juice.shop:443 "GET /config/database.yml HTTP/1.1" 200 9082
+2026-03-15 22:03:28,806 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:28,816 DEBUG: https://preview.owasp-juice.shop:443 "GET /.ssh/id_rsa HTTP/1.1" 200 9082
+2026-03-15 22:03:28,830 DEBUG: https://preview.owasp-juice.shop:443 "GET /application.properties HTTP/1.1" 200 9082
+2026-03-15 22:03:28,910 DEBUG: https://preview.owasp-juice.shop:443 "GET /api/nonexistent HTTP/1.1" 500 745
+2026-03-15 22:03:28,964 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:28,970 DEBUG: https://preview.owasp-juice.shop:443 "GET /application.yml HTTP/1.1" 200 9082
+2026-03-15 22:03:28,974 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:28,979 DEBUG: https://preview.owasp-juice.shop:443 "GET /id_rsa HTTP/1.1" 200 None
+2026-03-15 22:03:29,017 DEBUG: https://preview.owasp-juice.shop:443 "GET /db_backup.sql HTTP/1.1" 200 None
+2026-03-15 22:03:29,080 DEBUG: https://preview.owasp-juice.shop:443 "GET /.git/config HTTP/1.1" 200 None
+2026-03-15 22:03:29,121 DEBUG: https://preview.owasp-juice.shop:443 "GET /private.key HTTP/1.1" 200 None
+2026-03-15 22:03:29,641 DEBUG: https://preview.owasp-juice.shop:443 "GET /server.key HTTP/1.1" 200 None
+2026-03-15 22:03:29,654 DEBUG: https://preview.owasp-juice.shop:443 "GET /.npmrc HTTP/1.1" 200 9082
+2026-03-15 22:03:29,666 DEBUG: https://preview.owasp-juice.shop:443 "GET /?id='%22;%3C%3E%7B%7D%5B%5D%7C%5C HTTP/1.1" 200 9082
+2026-03-15 22:03:29,668 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:29,677 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:29,678 DEBUG: https://preview.owasp-juice.shop:443 "GET /.dockerenv HTTP/1.1" 200 None
+2026-03-15 22:03:29,718 DEBUG: https://preview.owasp-juice.shop:443 "GET /docker-compose.yml HTTP/1.1" 200 9082
+2026-03-15 22:03:29,737 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:29,739 DEBUG: https://preview.owasp-juice.shop:443 "GET /certificate.pem HTTP/1.1" 200 None
+2026-03-15 22:03:29,776 DEBUG: https://preview.owasp-juice.shop:443 "GET /config.php.bak HTTP/1.1" 403 239
+2026-03-15 22:03:29,862 DEBUG: https://preview.owasp-juice.shop:443 "GET /backup.zip HTTP/1.1" 200 None
+2026-03-15 22:03:29,894 DEBUG: https://preview.owasp-juice.shop:443 "GET /nginx.conf HTTP/1.1" 200 None
+2026-03-15 22:03:30,051 DEBUG: https://preview.owasp-juice.shop:443 "GET /error.log HTTP/1.1" 200 None
+2026-03-15 22:03:30,075 DEBUG: https://preview.owasp-juice.shop:443 "GET /debug.log HTTP/1.1" 200 9082
+2026-03-15 22:03:30,144 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:30,147 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:30,157 DEBUG: https://preview.owasp-juice.shop:443 "GET /storage/logs/laravel.log HTTP/1.1" 200 None
+2026-03-15 22:03:30,191 DEBUG: https://preview.owasp-juice.shop:443 "GET /swagger.json HTTP/1.1" 200 9082
+2026-03-15 22:03:30,207 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:30,358 DEBUG: https://preview.owasp-juice.shop:443 "GET /api/swagger HTTP/1.1" 500 743
+2026-03-15 22:03:30,367 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:30,432 DEBUG: https://preview.owasp-juice.shop:443 "GET /swagger.yaml HTTP/1.1" 200 None
+2026-03-15 22:03:30,451 DEBUG: https://preview.owasp-juice.shop:443 "GET /rest/user/1 HTTP/1.1" 500 743
+2026-03-15 22:03:30,456 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:30,466 DEBUG: https://preview.owasp-juice.shop:443 "GET /openapi.json HTTP/1.1" 200 None
+2026-03-15 22:03:30,497 DEBUG: https://preview.owasp-juice.shop:443 "GET /api-docs HTTP/1.1" 301 158
+2026-03-15 22:03:30,778 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:30,780 DEBUG: https://preview.owasp-juice.shop:443 "GET /actuator/health HTTP/1.1" 200 None
+2026-03-15 22:03:30,794 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:30,795 DEBUG: https://preview.owasp-juice.shop:443 "GET /.git/COMMIT_EDITMSG HTTP/1.1" 200 9082
+2026-03-15 22:03:31,302 DEBUG: https://preview.owasp-juice.shop:443 "GET /robots.txt HTTP/1.1" 200 28
+2026-03-15 22:03:31,442 DEBUG: https://preview.owasp-juice.shop:443 "GET /metrics HTTP/1.1" 200 25331
+2026-03-15 22:03:31,498 DEBUG: https://preview.owasp-juice.shop:443 "GET /sitemap.xml HTTP/1.1" 200 None
+2026-03-15 22:03:31,502 DEBUG: https://preview.owasp-juice.shop:443 "POST /api/login HTTP/1.1" 500 741
+2026-03-15 22:03:31,509 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:31,691 DEBUG: https://preview.owasp-juice.shop:443 "GET /config/secrets.yml HTTP/1.1" 200 9082
+2026-03-15 22:03:31,834 DEBUG: https://preview.owasp-juice.shop:443 "GET /.DS_Store HTTP/1.1" 200 None
+2026-03-15 22:03:31,943 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:32,428 DEBUG: https://preview.owasp-juice.shop:443 "GET /actuator HTTP/1.1" 200 None
+2026-03-15 22:03:32,609 DEBUG: https://preview.owasp-juice.shop:443 "GET /.bash_history HTTP/1.1" 200 None
+2026-03-15 22:03:32,740 DEBUG: https://preview.owasp-juice.shop:443 "GET /.zsh_history HTTP/1.1" 200 9082
+2026-03-15 22:03:33,236 DEBUG: https://preview.owasp-juice.shop:443 "GET /package.json HTTP/1.1" 200 9082
+2026-03-15 22:03:33,427 DEBUG: https://preview.owasp-juice.shop:443 "GET /composer.json HTTP/1.1" 200 None
+2026-03-15 22:03:33,624 DEBUG: https://preview.owasp-juice.shop:443 "GET /logs/error.log HTTP/1.1" 200 9082
+2026-03-15 22:03:33,624 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:34,090 DEBUG: https://preview.owasp-juice.shop:443 "GET /yarn.lock HTTP/1.1" 200 9082
+2026-03-15 22:03:34,130 DEBUG: https://preview.owasp-juice.shop:443 "GET /?id=%27 HTTP/1.1" 200 9082
+2026-03-15 22:03:34,685 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:34,768 DEBUG: https://preview.owasp-juice.shop:443 "GET /terraform.tfstate HTTP/1.1" 200 None
+2026-03-15 22:03:35,142 DEBUG: https://preview.owasp-juice.shop:443 "GET /actuator/mappings HTTP/1.1" 200 None
+2026-03-15 22:03:35,374 DEBUG: Starting new HTTPS connection (42): preview.owasp-juice.shop:443
+2026-03-15 22:03:35,666 DEBUG: https://preview.owasp-juice.shop:443 "GET /?id=%3Cscript%3E HTTP/1.1" 200 None
+2026-03-15 22:03:36,049 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:36,185 DEBUG: https://preview.owasp-juice.shop:443 "GET /actuator/env HTTP/1.1" 200 None
+2026-03-15 22:03:36,711 DEBUG: https://preview.owasp-juice.shop:443 "GET /?id=undefined HTTP/1.1" 200 9082
+2026-03-15 22:03:36,951 DEBUG: Starting new HTTPS connection (43): preview.owasp-juice.shop:443
+2026-03-15 22:03:37,077 DEBUG: Starting new HTTPS connection (44): preview.owasp-juice.shop:443
+2026-03-15 22:03:37,651 DEBUG: Starting new HTTPS connection (45): preview.owasp-juice.shop:443
+2026-03-15 22:03:37,712 DEBUG: https://preview.owasp-juice.shop:443 "GET /user/1 HTTP/1.1" 200 None
+2026-03-15 22:03:37,717 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:37,721 DEBUG: Starting new HTTPS connection (46): preview.owasp-juice.shop:443
+2026-03-15 22:03:37,737 DEBUG: https://preview.owasp-juice.shop:443 "GET /.env HTTP/1.1" 200 None
+2026-03-15 22:03:37,776 DEBUG: https://preview.owasp-juice.shop:443 "GET /?id=%00 HTTP/1.1" 200 9082
+2026-03-15 22:03:37,777 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:37,947 DEBUG: https://preview.owasp-juice.shop:443 "GET /info.php HTTP/1.1" 200 None
+2026-03-15 22:03:38,156 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:38,379 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:38,507 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:39,312 DEBUG: Starting new HTTPS connection (47): preview.owasp-juice.shop:443
+2026-03-15 22:03:39,422 DEBUG: Starting new HTTPS connection (48): preview.owasp-juice.shop:443
+2026-03-15 22:03:39,607 DEBUG: https://preview.owasp-juice.shop:443 "POST /api/login HTTP/1.1" 500 741
+2026-03-15 22:03:39,612 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:39,622 DEBUG: Starting new HTTPS connection (49): preview.owasp-juice.shop:443
+2026-03-15 22:03:39,902 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:40,786 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:40,786 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:40,812 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:40,860 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:40,925 DEBUG: Starting new HTTPS connection (50): preview.owasp-juice.shop:443
+2026-03-15 22:03:40,993 DEBUG: Starting new HTTPS connection (51): preview.owasp-juice.shop:443
+2026-03-15 22:03:41,100 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:41,361 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:41,704 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:41,716 DEBUG: Starting new HTTPS connection (52): preview.owasp-juice.shop:443
+2026-03-15 22:03:41,840 DEBUG: https://preview.owasp-juice.shop:443 "POST /api/login HTTP/1.1" 500 741
+2026-03-15 22:03:41,840 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:42,436 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:42,437 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:42,483 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:42,490 DEBUG: Starting new HTTPS connection (53): preview.owasp-juice.shop:443
+2026-03-15 22:03:42,650 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:42,653 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:42,657 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:42,677 DEBUG: https://preview.owasp-juice.shop:443 "GET /login HTTP/1.1" 200 9082
+2026-03-15 22:03:42,683 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:42,990 DEBUG: https://preview.owasp-juice.shop:443 "GET /.well-known/ HTTP/1.1" 200 3539
+2026-03-15 22:03:42,996 DEBUG: https://preview.owasp-juice.shop:443 "POST /api/login HTTP/1.1" 500 741
+2026-03-15 22:03:42,999 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:42,999 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:43,009 DEBUG: https://preview.owasp-juice.shop:443 "GET /?sort=%27 HTTP/1.1" 200 None
+2026-03-15 22:03:43,402 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:43,409 DEBUG: https://preview.owasp-juice.shop:443 "POST /api/login HTTP/1.1" 500 741
+2026-03-15 22:03:43,417 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:43,683 DEBUG: https://preview.owasp-juice.shop:443 "GET /?url=http%3A%2F%2F127.0.0.1 HTTP/1.1" 200 9082
+2026-03-15 22:03:43,721 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:44,033 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:44,317 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:44,462 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 9082
+2026-03-15 22:03:44,477 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:44,731 DEBUG: https://preview.owasp-juice.shop:443 "POST /login HTTP/1.1" 200 None
+2026-03-15 22:03:44,768 DEBUG: https://preview.owasp-juice.shop:443 "POST /api/login HTTP/1.1" 500 741
+2026-03-15 22:03:44,770 WARNING: Connection pool is full, discarding connection: preview.owasp-juice.shop. Connection pool size: 10
+2026-03-15 22:03:44,868 DEBUG: https://preview.owasp-juice.shop:443 "POST /api/login HTTP/1.1" 500 741
+2026-03-15 22:03:44,872 DEBUG: Resetting dropped connection: preview.owasp-juice.shop
+2026-03-15 22:03:44,887 DEBUG: Starting new HTTPS connection (54): preview.owasp-juice.shop:443
+2026-03-15 22:03:44,938 DEBUG: https://preview.owasp-juice.shop:443 "GET /?url=http%3A%2F%2F127.0.0.1%3A80 HTTP/1.1" 200 None
