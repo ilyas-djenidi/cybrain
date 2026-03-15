@@ -82,7 +82,18 @@ class UrlScanner:
         
         # Save report
         try:
-            generator = ReportGenerator(self.target_url, unique_findings)
+            report_dir = os.path.join(
+                os.path.dirname(
+                    os.path.dirname(os.path.abspath(__file__))
+                ),
+                "report"
+            )
+            os.makedirs(report_dir, exist_ok=True)
+            generator = ReportGenerator(
+                self.target_url,
+                unique_findings,
+                report_dir
+            )
             generator.generate_all()
         except Exception as e:
             print(f"[!] Report generation failed: {e}")

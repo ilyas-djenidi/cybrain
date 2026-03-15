@@ -1,238 +1,370 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import SeverityBadge from '../components/SeverityBadge';
-import { sortBySeverity } from '../utils/logicProtection';
+
+/**
+ * CYBRAIN — Network Reconnaissance Page
+ * Enterprise-grade perimeter scanning & service discovery
+ */
 
 const NetworkScanPage = () => {
     const [target, setTarget] = useState('');
-    const [scanType, setScanType] = useState('full');
+    const [scanMode, setScanMode] = useState('full');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
+    const [error, setError] = useState(null);
     const [aiAnalysis, setAiAnalysis] = useState('');
-    const [analyzing, setAnalyzing]   = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
 
-    const handleScan = async () => {
+    // Common safe targets for quick testing
+    const quickTargets = [
+        { name: 'Nmap ScanMe', host: 'scanme.nmap.org' },
+        { name: 'Google DNS', host: '8.8.8.8' },
+        { name: 'Localhost', host: '127.0.0.1' }
+    ];
+
+    const scanModes = [
+        { 
+            id: 'full', 
+            label: 'Deep Infiltration', 
+            desc: 'Comprehensive scan (Ports + Services + OS)', 
+            icon: '🔍',
+            color: 'cyan'
+        },
+        { 
+            id: 'ports', 
+            label: 'Port Discovery', 
+            desc: 'Identify all active entry points', 
+            icon: '⚡',
+            color: 'blue'
+        },
+        { 
+            id: 'quick', 
+            label: 'Surveillance Mode', 
+            desc: 'Rapid scan of common top 100 ports', 
+            icon: '📡',
+            color: 'purple'
+        }
+    ];
+
+    const handleExecuteScan = async () => {
         if (!target.trim()) return;
-        let clean = target.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+        
+        let discoveryTarget = target.trim()
+            .replace(/^https?:\/\//, '')
+            .split('/')[0]
+            .split(':')[0];
+
         setLoading(true);
         setResults(null);
+        setError(null);
         setAiAnalysis('');
+
         try {
+            // Using a long timeout for network scans (3 minutes)
             const { data } = await axios.post(
                 '/scan_network',
-                { target: clean, scan_type: scanType },
-                { headers: {'Content-Type':'application/json'}}
+                { target: discoveryTarget, mode: scanMode },
+                { 
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 180000 
+                }
             );
-            setResults(data);
-        } catch(e) {
-            console.error('[NETWORK SCAN ERROR]', e);
-            if (e.code === 'ECONNREFUSED' || e.response?.status === 502) {
-                setResults({
-                    vulnerabilities: [{
-                        severity: 'HIGH',
-                        code: 'Backend Offline',
-                        message: 'Flask backend is not running. Start <code>app.py</code> in the web_app folder.'
-                    }]
-                });
+            
+            if (data.findings && data.findings.length > 0) {
+                setResults(data);
+            } else {
+                setError("No services or vulnerabilities discovered on target.");
+            }
+        } catch (e) {
+            console.error('[NETWORK RECON ERROR]', e);
+            if (e.response?.status === 502) {
+                setError("<strong>502 Bad Gateway</strong>: Backend is offline or crashing. Check Flask logs.");
+            } else if (e.code === 'ECONNABORTED') {
+                setError("<strong>Scan Timeout</strong>: The target took too long to respond (3 min limit).");
+            } else {
+                setError(`<strong>Error</strong>: ${e.response?.data?.error || e.message}`);
             }
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAiAnalysis = async () => {
+    const runAiSurfaceAudit = async () => {
         if (!results) return;
         setAnalyzing(true);
         try {
-            const { data } = await axios.post(
-                '/api/analyze_findings',
-                {
-                    findings:  results.findings || results.vulnerabilities || [],
-                    target:    target,
-                    scan_type: 'network',
-                    context:   JSON.stringify(results.recon || results.hosts || {})
-                }
-            );
+            const { data } = await axios.post('/api/analyze_findings', {
+                findings: results.findings,
+                target: target,
+                scan_type: 'network'
+            });
             setAiAnalysis(data.analysis);
-        } catch(e) {
-            setAiAnalysis('AI analysis failed: ' + e.message);
+        } catch (e) {
+            setAiAnalysis("AI Surface Audit failed: " + e.message);
         } finally {
             setAnalyzing(false);
         }
     };
 
-    const scanTypes = [
-        { id: 'full',  label: 'Deep Infiltration',  desc: 'Ports + Vulns + OS Detection' },
-        { id: 'ports', label: 'Port Discovery',  desc: 'Identify active services' },
-        { id: 'quick', label: 'Surveillance Scan', desc: 'Top common ports only' },
-    ];
+    const getSeverityCount = (sev) => {
+        if (!results?.findings) return 0;
+        return results.findings.filter(f => f.severity === sev).length;
+    };
 
     return (
-        <div className="min-h-screen bg-black content-section pt-24 pb-16 px-4 md:px-12">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="mb-10">
-                    <a href="/" className="text-cyan-500/60 text-[10px] font-orbitron tracking-widest uppercase hover:text-cyan-400 mb-6 inline-flex items-center gap-2">← Back to Command Center</a>
-                    <h1 className="font-orbitron font-black text-3xl md:text-5xl text-white tracking-wider mb-3">
-                        NETWORK <span className="text-cyan-400">RECON</span>
-                    </h1>
-                    <p className="text-gray-500 font-inter text-xs md:text-sm max-w-2xl leading-relaxed">
-                        Enterprise-grade discovery engine. Surface vulnerabilities and scan the perimeter powered by Gemini 1.5 expert analysis.
-                    </p>
+        <div className="min-h-screen bg-black text-white pt-24 pb-20 px-4 md:px-12">
+            <div className="max-w-7xl mx-auto">
+                
+                {/* Header Section */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-12"
+                >
+                    <a href="/" className="text-cyan-500/60 text-[10px] font-orbitron tracking-widest uppercase hover:text-cyan-400 mb-6 inline-flex items-center gap-2 transition-colors">
+                        ← Back
+                    </a>
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div>
+                            <h1 className="font-orbitron font-black text-4xl md:text-6xl tracking-tighter mb-4">
+                                NETWORK <span className="text-cyan-400">RECON</span>
+                            </h1>
+                            <p className="text-gray-500 font-inter text-sm max-w-2xl leading-relaxed">
+                                Perimeter discovery engine. Surface vulnerabilities, open ports, and service banners.
+                                Powered by Cybrain static analysis & Gemini AI intelligence.
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            {quickTargets.map(t => (
+                                <button 
+                                    key={t.host}
+                                    onClick={() => setTarget(t.host)}
+                                    className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-orbitron text-gray-400 hover:border-cyan-500/50 hover:text-cyan-400 transition-all"
+                                >
+                                    {t.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </motion.div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-                    {/* Left - Input */}
-                    <div className="space-y-8">
-                        <div className="scanner-glass rounded-3xl p-6 md:p-10 border border-white/5 shadow-2xl">
-                            <label className="font-orbitron text-[10px] text-gray-500 tracking-[0.25em] uppercase mb-5 block">Host Target Information</label>
-                            <input
-                                value={target}
-                                onChange={e => setTarget(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleScan()}
-                                placeholder="192.168.1.1 or scanme.nmap.org"
-                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-gray-300 font-mono text-sm focus:outline-none focus:border-cyan-500/50 transition-all mb-10 shadow-inner"
-                            />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    
+                    {/* Left Column: Input & Modes */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-8 shadow-2xl">
+                            <label className="font-orbitron text-[10px] text-gray-500 tracking-[0.2em] uppercase mb-4 block">Target Hostname / IP</label>
+                            <div className="relative mb-8">
+                                <input 
+                                    value={target}
+                                    onChange={e => setTarget(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleExecuteScan()}
+                                    placeholder="e.g. scanme.nmap.org"
+                                    className="w-full bg-black border border-white/10 rounded-2xl px-6 py-4 text-cyan-400 font-mono text-sm focus:outline-none focus:border-cyan-500 transition-all shadow-inner"
+                                />
+                                <div className="absolute right-4 top-4 text-cyan-500/30 animate-pulse">📡</div>
+                            </div>
 
-                            <label className="font-orbitron text-[10px] text-gray-500 tracking-[0.25em] uppercase mb-5 block">Operational Mode</label>
-                            <div className="grid grid-cols-1 gap-4">
-                                {scanTypes.map(type => (
+                            <label className="font-orbitron text-[10px] text-gray-500 tracking-[0.2em] uppercase mb-4 block">Operational Mode</label>
+                            <div className="space-y-3">
+                                {scanModes.map(mode => (
                                     <button
-                                        key={type.id}
-                                        onClick={() => setScanType(type.id)}
-                                        className={`p-5 rounded-2xl border text-left transition-all duration-500 group ${
-                                            scanType === type.id
-                                                ? 'border-cyan-500/60 bg-cyan-500/10 text-cyan-400 shadow-lg shadow-cyan-500/5'
-                                                : 'border-white/5 bg-white/[0.01] text-gray-600 hover:border-white/10'
+                                        key={mode.id}
+                                        onClick={() => setScanMode(mode.id)}
+                                        className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 flex items-start gap-4 group ${
+                                            scanMode === mode.id
+                                                ? 'border-cyan-500/50 bg-cyan-500/10 text-white'
+                                                : 'border-white/5 bg-white/[0.02] text-gray-500 hover:border-white/20'
                                         }`}
                                     >
-                                        <div className="font-orbitron text-xs font-bold tracking-widest mb-1 group-hover:text-gray-300 transition-colors">{type.label}</div>
-                                        <div className="text-[10px] font-inter opacity-60 group-hover:opacity-100 transition-opacity">{type.desc}</div>
+                                        <span className="text-xl mt-1">{mode.icon}</span>
+                                        <div>
+                                            <div className={`font-orbitron text-[10px] font-bold tracking-wider mb-0.5 ${scanMode === mode.id ? 'text-cyan-400' : 'text-gray-400'}`}>
+                                                {mode.label}
+                                            </div>
+                                            <div className="text-[10px] opacity-60 leading-tight">{mode.desc}</div>
+                                        </div>
                                     </button>
                                 ))}
                             </div>
-                        </div>
 
-                        <motion.button
-                            onClick={handleScan}
-                            disabled={loading || !target.trim()}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            className={`w-full py-5 font-orbitron font-bold text-xs tracking-[0.3em] uppercase rounded-2xl transition-all duration-300 border flex items-center justify-center gap-3 shadow-xl ${
-                                loading || !target.trim() 
-                                    ? 'border-white/5 bg-white/5 text-gray-600' 
-                                    : 'border-cyan-500/40 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500 hover:text-black hover:border-cyan-500'
-                            }`}
-                        >
-                            {loading ? (
-                                <>
-                                    <span className="animate-spin text-lg">⟳</span>
-                                    <span>SYNCHRONIZING RECON...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>▶ EXECUTE SCAN SEQUENCE</span>
-                                </>
-                            )}
-                        </motion.button>
+                            <button
+                                onClick={handleExecuteScan}
+                                disabled={loading || !target.trim()}
+                                className={`w-full mt-10 py-5 font-orbitron font-bold text-xs tracking-[0.3em] uppercase rounded-2xl transition-all duration-300 border flex items-center justify-center gap-3 ${
+                                    loading || !target.trim() 
+                                        ? 'border-white/5 bg-white/5 text-gray-600' 
+                                        : 'border-cyan-500/50 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500 hover:text-black shadow-lg shadow-cyan-500/20'
+                                }`}
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="flex gap-1">
+                                            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0s'}}></span>
+                                            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                                            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
+                                        </div>
+                                        <span>INITIALIZING...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>▶ START SEQUENCE</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Right - Results */}
-                    <div className="space-y-8">
-                        {(results?.findings || results?.vulnerabilities) ? (
-                            <motion.div 
-                                initial={{ opacity:0, x:20 }}
-                                animate={{ opacity:1, x:0 }}
-                                className="space-y-6"
-                            >
-                                {/* AI Analysis Toggle */}
-                                <div className="scanner-glass rounded-3xl p-6 md:p-8 border border-purple-500/20 shadow-2xl shadow-purple-500/5">
-                                    <div className="flex items-center justify-between flex-wrap gap-6 mb-6">
-                                        <div>
-                                            <h3 className="font-orbitron text-xs text-purple-400 font-bold tracking-[0.2em] uppercase mb-1">🤖 AI SURFACE AUDIT</h3>
-                                            <p className="text-[10px] text-gray-500 font-inter">Deep analysis of the network attack surface</p>
-                                        </div>
-                                        <button 
-                                            onClick={handleAiAnalysis} 
-                                            disabled={analyzing} 
-                                            className="px-6 py-2.5 bg-purple-500/10 border border-purple-500/40 text-purple-400 font-orbitron text-[10px] tracking-widest uppercase rounded-xl hover:bg-purple-500 hover:text-black transition-all disabled:opacity-30"
-                                        >
-                                            {analyzing ? 'AUDITING...' : 'RUN AI AUDIT'}
-                                        </button>
+                    {/* Right Column: Results */}
+                    <div className="lg:col-span-8">
+                        {error && (
+                            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-red-400 text-xs font-inter mb-6">
+                                <span dangerouslySetInnerHTML={{ __html: error }} />
+                            </motion.div>
+                        )}
+
+                        <AnimatePresence mode="wait">
+                            {results ? (
+                                <motion.div 
+                                    initial={{ opacity:0, x:20 }} 
+                                    animate={{ opacity:1, x:0 }}
+                                    exit={{ opacity:0 }}
+                                    className="space-y-8"
+                                >
+                                    {/* Summary Stats */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                        {[
+                                            { label: 'CRITICAL', color: 'bg-red-500', count: getSeverityCount('CRITICAL') },
+                                            { label: 'HIGH', color: 'bg-orange-500', count: getSeverityCount('HIGH') },
+                                            { label: 'MEDIUM', color: 'bg-yellow-500', count: getSeverityCount('MEDIUM') },
+                                            { label: 'LOW', color: 'bg-blue-500', count: getSeverityCount('LOW') },
+                                            { label: 'INFO', color: 'bg-gray-500', count: getSeverityCount('INFO') },
+                                        ].map(stat => (
+                                            <div key={stat.label} className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 text-center">
+                                                <div className={`w-2 h-2 rounded-full ${stat.color} mx-auto mb-2 shadow-lg shadow-${stat.color.split('-')[1]}-500/50`}></div>
+                                                <div className="text-2xl font-orbitron font-black">{stat.count}</div>
+                                                <div className="text-[8px] text-gray-600 font-orbitron tracking-widest">{stat.label}</div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <AnimatePresence>
-                                        {aiAnalysis && (
-                                            <motion.div 
-                                                initial={{ opacity:0, height:0 }}
-                                                animate={{ opacity:1, height:'auto' }}
-                                                className="p-6 bg-black/40 border border-purple-500/20 rounded-2xl shadow-inner overflow-hidden"
+
+                                    {/* AI Surface Audit Card */}
+                                    <div className="bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20 rounded-3xl p-8">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div>
+                                                <h3 className="font-orbitron font-bold text-sm text-purple-400 tracking-widest uppercase mb-1 flex items-center gap-2">
+                                                    🤖 AI SURFACE AUDIT
+                                                </h3>
+                                                <p className="text-[10px] text-gray-500">Expert interpretation of infrastructure risk</p>
+                                            </div>
+                                            <button 
+                                                onClick={runAiSurfaceAudit}
+                                                disabled={analyzing}
+                                                className="px-6 py-2.5 bg-purple-500/10 border border-purple-500/30 rounded-xl text-[10px] font-orbitron text-purple-400 hover:bg-purple-500 hover:text-black transition-all disabled:opacity-30"
                                             >
-                                                <pre className="text-gray-300 text-[11px] font-inter whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto custom-scrollbar">{aiAnalysis}</pre>
+                                                {analyzing ? 'AUDITING...' : 'RUN AI AUDIT'}
+                                            </button>
+                                        </div>
+                                        {aiAnalysis && (
+                                            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="bg-black/50 border border-purple-500/10 rounded-2xl p-6">
+                                                <pre className="text-gray-300 text-[11px] font-inter leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto custom-scrollbar">
+                                                    {aiAnalysis}
+                                                </pre>
                                             </motion.div>
                                         )}
-                                    </AnimatePresence>
-                                </div>
+                                    </div>
 
-                                {/* Host Results */}
-                                <div className="space-y-6">
-                                    <h2 className="font-orbitron text-[10px] text-gray-500 tracking-[0.3em] uppercase px-2">Discovery Logs</h2>
-                                    {(results.recon?.hosts || results.hosts || []).map((host, hi) => (
-                                        <motion.div 
-                                            key={hi} 
-                                            initial={{ opacity:0, y:20 }}
-                                            animate={{ opacity:1, y:0 }}
-                                            transition={{ delay: hi * 0.1 }}
-                                            className="scanner-glass rounded-3xl p-6 md:p-8 border border-white/5 shadow-xl"
-                                        >
-                                            <div className="flex justify-between items-start flex-wrap gap-4 mb-8">
-                                                <div>
-                                                    <div className="text-white font-orbitron font-bold text-xl md:text-2xl tracking-wider mb-1">{host.ip}</div>
-                                                    <div className="text-gray-500 text-[10px] font-mono tracking-wider">{host.hostname || 'UNRESOLVED HOSTNAME'}</div>
+                                    {/* Recon Data */}
+                                    {results.recon && (
+                                        <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-8">
+                                            <h3 className="font-orbitron text-[10px] text-gray-500 tracking-[0.2em] uppercase mb-6 flex items-center gap-2">
+                                                <span className="text-cyan-500">⦿</span> RECONNAISSANCE SUMMARY
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                                    <div className="text-[8px] text-gray-600 font-orbitron mb-1 uppercase">Resolved IP</div>
+                                                    <div className="text-sm font-mono text-cyan-400">{results.recon.ip || 'Unknown'}</div>
                                                 </div>
-                                                <div className="text-cyan-400 font-orbitron text-[9px] border border-cyan-500/20 bg-cyan-500/5 px-4 py-2 rounded-full tracking-widest uppercase">
-                                                    OS: {host.os || 'Unknown Signature'}
+                                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                                    <div className="text-[8px] text-gray-600 font-orbitron mb-1 uppercase">OS Detection</div>
+                                                    <div className="text-sm font-inter text-gray-300">{results.recon.os || 'Unknown Signature'}</div>
+                                                </div>
+                                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                                    <div className="text-[8px] text-gray-600 font-orbitron mb-1 uppercase">Open Ports</div>
+                                                    <div className="text-sm font-inter text-gray-300">{results.recon.open_ports} detected</div>
                                                 </div>
                                             </div>
+                                        </div>
+                                    )}
 
-                                            <div className="grid grid-cols-1 gap-3">
-                                                {host.ports?.map((port, pi) => (
-                                                    <div key={pi} className="flex items-center justify-between p-4 bg-white/[0.02] rounded-2xl border border-white/5 group hover:border-cyan-500/30 transition-all duration-300">
-                                                        <div className="flex items-center gap-6">
-                                                            <span className="font-mono text-cyan-400 text-sm w-14 font-bold tracking-tighter">{port.port}</span>
-                                                            <div>
-                                                                <div className="text-gray-200 text-[10px] font-orbitron font-bold uppercase tracking-widest mb-1 group-hover:text-cyan-400 transition-colors">{port.service}</div>
-                                                                <div className="text-gray-600 text-[9px] font-mono uppercase opacity-70 group-hover:opacity-100 transition-opacity">{port.product || 'Unknown Service'} {port.version}</div>
-                                                            </div>
-                                                        </div>
-                                                        <span className={`text-[9px] font-orbitron px-3 py-1.5 rounded-full border transition-all ${
-                                                            port.state === 'open' 
-                                                                ? 'text-green-400 border-green-500/20 bg-green-500/5' 
-                                                                : 'text-red-400 border-red-500/20 bg-red-500/5'
-                                                        }`}>
-                                                            {port.state.toUpperCase()}
-                                                        </span>
+                                    {/* Vulnerabilities List */}
+                                    <div className="space-y-4">
+                                        <h3 className="font-orbitron text-[10px] text-gray-500 tracking-[0.2em] uppercase px-4">FINDINGS LOG</h3>
+                                        {results.findings.map((finding, idx) => (
+                                            <motion.div 
+                                                key={idx}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: idx * 0.05 }}
+                                                className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-all group"
+                                            >
+                                                <div className="flex items-start justify-between gap-4 mb-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <SeverityBadge severity={finding.severity} />
+                                                        <h4 className="font-orbitron font-bold text-sm tracking-tight text-gray-200 group-hover:text-cyan-400 transition-colors uppercase">
+                                                            {finding.code}
+                                                        </h4>
                                                     </div>
-                                                ))}
-                                                {(!host.ports || host.ports.length === 0) && (
-                                                    <div className="text-center py-8 border border-dashed border-white/5 rounded-2xl">
-                                                        <p className="text-gray-700 font-orbitron text-[10px] tracking-widest uppercase">No open services found</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                                    <div className="text-[10px] font-mono text-gray-600">{finding.file}</div>
+                                                </div>
+                                                <div 
+                                                    className="text-[11px] text-gray-500 font-inter leading-relaxed findings-content"
+                                                    dangerouslySetInnerHTML={{ __html: finding.message }}
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+
+                                    {/* Footer Actions */}
+                                    <div className="flex justify-between items-center py-10 border-t border-white/5 mt-10">
+                                        <div className="flex gap-6">
+                                            <a href="/scan/apache" className="text-[10px] font-orbitron text-gray-600 hover:text-cyan-400 transition-all uppercase">Config Scanner</a>
+                                            <a href="/scan/code" className="text-[10px] font-orbitron text-gray-600 hover:text-cyan-400 transition-all uppercase">Code Analyzer</a>
+                                        </div>
+                                        <button className="px-8 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-orbitron text-gray-400 hover:border-green-500/50 hover:text-green-400 transition-all uppercase flex items-center gap-2">
+                                            <span>📥</span> EXPORT MD REPORT
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ) : loading ? (
+                                <motion.div 
+                                    initial={{ opacity:0 }} animate={{ opacity:1 }}
+                                    className="h-[600px] flex flex-col items-center justify-center text-center p-20 border-2 border-dashed border-white/5 rounded-3xl"
+                                >
+                                    <div className="relative mb-10">
+                                        <div className="w-24 h-24 border-2 border-cyan-500/20 rounded-full animate-ping"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center text-4xl">🛰️</div>
+                                    </div>
+                                    <h3 className="font-orbitron font-black text-xl tracking-[0.3em] mb-4 animate-pulse">SYNCHRONIZING RECON DATA</h3>
+                                    <p className="text-gray-600 font-inter text-xs max-w-sm">
+                                        Intercepting network packets and mapping target surface. This process usually takes 60-180 seconds.
+                                    </p>
+                                    <div className="mt-10 font-mono text-[10px] text-cyan-500/50 uppercase tracking-widest">
+                                        {`[ INTERCEPTING ] PORT_SCAN :: ATTACK_VECTOR_RECOGNITION`}
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <div className="h-[600px] flex flex-col items-center justify-center text-center p-20 border-2 border-dashed border-white/5 rounded-3xl">
+                                    <div className="text-6xl mb-10 opacity-20">📡</div>
+                                    <h3 className="font-orbitron font-black text-xl tracking-[0.3em] text-gray-800 mb-4">AWAITING TARGET DATA</h3>
+                                    <p className="text-gray-700 font-inter text-xs max-w-xs">
+                                        Input a target IP or hostname to begin automated perimeter reconnaissance.
+                                    </p>
                                 </div>
-                            </motion.div>
-                        ) : !loading ? (
-                            <div className="scanner-glass rounded-3xl p-16 text-center border-2 border-dashed border-white/5 h-full flex flex-col justify-center min-h-[400px]">
-                                <div className="text-6xl mb-6 opacity-20">📡</div>
-                                <p className="text-gray-600 font-orbitron text-xs tracking-[0.3em] uppercase">
-                                    Reconnaissance Passive
-                                </p>
-                                <p className="text-gray-700 font-inter text-xs mt-3">Target data will appear here after synchronization</p>
-                            </div>
-                        ) : null}
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>

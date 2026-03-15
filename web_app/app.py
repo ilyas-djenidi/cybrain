@@ -203,13 +203,20 @@ def scan_network():
 
     except Exception as e:
         print(f"[SCAN_NETWORK ERROR]\n{traceback.format_exc()}")
+        target_info = "Unknown"
+        try:
+            # Re-read target if data not defined
+            target_info = request.get_json(force=True).get('target', 'Unknown')
+        except:
+            pass
+            
         return jsonify({
             "findings": [{
                 "severity": "HIGH",
                 "line":     "-",
                 "message":  f"Network scan error: {str(e)}",
                 "code":     "Scanner Error",
-                "file":     data.get('target', ''),
+                "file":     target_info,
             }],
             "total": 1,
         }), 200

@@ -27,7 +27,7 @@ class NetworkScanner:
     + professional report generation.
     """
 
-    def __init__(self, target, timeout=15):
+    def __init__(self, target, timeout=30):
         # Clean target — remove http:// etc
         self.target = self._clean_target(target)
         self.timeout = timeout

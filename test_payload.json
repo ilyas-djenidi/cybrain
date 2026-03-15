@@ -1,0 +1,1 @@
+{"code": "password = \"admin123\"\nimport os\nos.system(user_input)", "filename": "test.py"}

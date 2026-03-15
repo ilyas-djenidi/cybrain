@@ -19,7 +19,7 @@ class NetworkRecon:
     Gathers intelligence about the target network/host
     """
 
-    def __init__(self, target, timeout=10):
+    def __init__(self, target, timeout=15):
         self.target  = target
         self.timeout = timeout
         self.results = {}
@@ -108,7 +108,7 @@ class NetworkRecon:
                 sock = socket.socket(
                     socket.AF_INET, socket.SOCK_STREAM
                 )
-                sock.settimeout(self.timeout / 10)
+                sock.settimeout(2)  # 2 seconds per port
                 result = sock.connect_ex((target_ip, port))
                 sock.close()
                 if result == 0:
