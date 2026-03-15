@@ -129,8 +129,8 @@ const WebScanPage = () => {
                     </h1>
                     <p className="text-gray-500 font-inter
                                   text-xs md:text-sm max-w-2xl leading-relaxed">
-                        Full OWASP Top 10 assessment with
-                        AI-powered analysis and remediation powered by Gemini 2.0.
+                        Pure Python security analysis engine.
+                        100% offline & local remediation.
                     </p>
                 </motion.div>
 
@@ -272,7 +272,7 @@ const WebScanPage = () => {
 
                         <p className="text-gray-700 text-[10px]
                                       font-inter mt-4">
-                            Estimated time: 3-8 minutes
+                            Estimated time: 1-3 minutes (Multithreaded)
                         </p>
                     </motion.div>
                 )}
@@ -336,7 +336,7 @@ const WebScanPage = () => {
                                     <p className="text-gray-500
                                                   text-xs
                                                   font-inter">
-                                        Powered by Gemini 2.0 Flash • Contextual remediation & advice
+                                        Cybrain Offline Engine • Deterministic remediation & expert advice
                                     </p>
                                 </div>
                                 <button
@@ -483,7 +483,7 @@ const WebScanPage = () => {
                                            transition-all
                                            rounded-2xl"
                             >
-                                Download PDF Report →
+                                Download Markdown Report →
                             </a>
                         </div>
                     </motion.div>

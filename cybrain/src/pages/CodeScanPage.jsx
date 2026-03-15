@@ -131,9 +131,7 @@ const CodeScanPage = () => {
                     </h1>
                     <p className="text-gray-500 text-xs md:text-sm
                                   font-inter max-w-2xl leading-relaxed">
-                        Upload any source file for deep static analysis. 
-                        Gemini 2.0 Flash
-detect vulnerabilities and generates
+                        Cybrain Offline Engine detects vulnerabilities and generates
                         hardened versions of your code.
                     </p>
                 </div>
@@ -273,7 +271,7 @@ detect vulnerabilities and generates
                     <div className="space-y-6">
                         <AnimatePresence mode="wait">
                             {result ? (
-                                <motion.div 
+                                <motion.div
                                     key="results"
                                     initial={{ opacity:0, x:20 }}
                                     animate={{ opacity:1, x:0 }}
@@ -320,7 +318,7 @@ detect vulnerabilities and generates
                                                 >
                                                     {fixing
                                                         ? '⟳ Fixing...'
-                                                        : '🔧 Apply AI Patch'}
+                                                        : '🔧 Apply Offline Patch'}
                                                 </motion.button>
                                             )}
                                         </div>

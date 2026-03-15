@@ -10,6 +10,9 @@
 import requests
 import re
 import json
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 import base64
 import time
 import urllib3
@@ -177,14 +180,19 @@ class OWASPChecker:
     """
 
     def __init__(self, target_url, session,
-                 timeout=20):
-        self.target  = (
+                 timeout=12, fast_mode=True):
+        self.target    = (
             target_url.split("#")[0].rstrip("/")
         )
-        self.base    = self._base(self.target)
-        self.session = session
-        self.timeout = timeout
-        self.findings = []
+        self.base      = self._base(self.target)
+        self.session   = session
+        self.timeout   = timeout
+        self.fast_mode = fast_mode
+        self.findings  = []
+        self.discovered_links = set()
+        self.discovered_forms = []
+        self.discovered_params = set()
+        self._lock = threading.Lock()
 
     def _base(self, url):
         p = urlparse(url)
@@ -227,7 +235,8 @@ class OWASPChecker:
     def _add(self, owasp_id, owasp_name, severity,
              title, description, evidence="",
              fix="", cwe="", cvss="", sans=""):
-        self.findings.append({
+        with self._lock:
+            self.findings.append({
             "owasp_id":    owasp_id,
             "owasp_name":  owasp_name,
             "severity":    severity,
@@ -248,6 +257,58 @@ class OWASPChecker:
         return urlunparse(
             (p.scheme, p.netloc, path, "", q, "")
         )
+
+    def _spider_target(self, html):
+        """
+        Dynamically extract links and forms from HTML.
+        Provides 'real pentest' capability by finding actual inputs.
+        """
+        print("[CYBRAIN] Spidering target for dynamic inputs...")
+        
+        # 1. Extract links (<a> href)
+        links = re.findall(r'href=["\'](/?[\w\-/.]+)["\']', html)
+        for link in links:
+            if link.startswith("/") and len(link) > 1:
+                self.discovered_links.add(link)
+            
+            # Extract params from links (e.g. ?id=1)
+            if "?" in link:
+                p_part = link.split("?")[1]
+                for kv in p_part.split("&"):
+                    if "=" in kv:
+                        self.discovered_params.add(kv.split("=")[0])
+
+        # 2. Extract forms and their inputs
+        # Simple regex-based form extraction
+        forms = re.findall(r'<form[^>]*>(.*?)</form>', html, re.DOTALL | re.IGNORECASE)
+        for form_html in forms:
+            action_match = re.search(r'action=["\']([^"\']+)["\']', form_html, re.IGNORECASE)
+            method_match = re.search(r'method=["\']([^"\']+)["\']', form_html, re.IGNORECASE)
+            
+            action = action_match.group(1) if action_match else ""
+            method = method_match.group(1).upper() if method_match else "GET"
+            
+            # Extract inputs
+            inputs = re.findall(r'name=["\']([^"\']+)["\']', form_html, re.IGNORECASE)
+            if inputs:
+                self.discovered_forms.append({
+                    "action": action,
+                    "method": method,
+                    "params": inputs
+                })
+                for inp in inputs:
+                    self.discovered_params.add(inp)
+
+        print(f"[CYBRAIN] Discovered {len(self.discovered_links)} links, "
+              f"{len(self.discovered_forms)} forms, "
+              f"{len(self.discovered_params)} unique parameters.")
+
+        # 3. SPA Detection
+        if any(s in html.lower() for s in ["bundle.js", "react.js", "app.js", "chunk.js"]):
+            print("[CYBRAIN] SPA detected! Adding API endpoints to scope.")
+            self.discovered_links.add("/api")
+            self.discovered_links.add("/v1")
+            self.discovered_links.add("/api/v1")
 
     def run_all(self):
         """
@@ -277,19 +338,32 @@ class OWASPChecker:
 
         print(f"[CYBRAIN] Status: {resp.status_code}")
 
-        # ── OWASP 2025 ──────────────────────────────────
-        self._a01_broken_access_control(resp)
-        self._a02_security_misconfiguration(resp)
-        self._a03_supply_chain(resp)
-        self._a04_cryptographic_failures(resp)
-        self._a05_injection(resp)
-        self._a06_insecure_design(resp)
-        self._a07_auth_failures(resp)
-        self._a08_integrity_failures(resp)
-        self._a09_logging_failures(resp)
-        self._a10_mishandling_exceptions(resp)
+        # ── DISCOVERY PHASE ─────────────────────────────
+        self._spider_target(resp.text)
 
-        # ── CWE/SANS EXTRAS ─────────────────────────────
+        # ── OWASP 2025 (PARALLEL) ──────────────────────
+        checks = [
+            (self._a01_broken_access_control, (resp,)),
+            (self._a02_security_misconfiguration, (resp,)),
+            (self._a03_supply_chain, (resp,)),
+            (self._a04_cryptographic_failures, (resp,)),
+            (self._a05_injection, (resp,)),
+            (self._a06_insecure_design, (resp,)),
+            (self._a07_auth_failures, (resp,)),
+            (self._a08_integrity_failures, (resp,)),
+            (self._a09_logging_failures, (resp,)),
+            (self._a10_mishandling_exceptions, (resp,)),
+        ]
+
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            futures = {ex.submit(fn, *args): fn.__name__ for fn, args in checks}
+            for future in as_completed(futures):
+                try:
+                    future.result(timeout=12)
+                except Exception as e:
+                    print(f"[CYBRAIN] Check {futures[future]} failed/timed out: {e}")
+
+        # ── CWE/SANS EXTRAS (SEQUENTIAL) ────────────────
         self._cwe_path_traversal()
         self._cwe_xxe()
         self._cwe_open_redirect()
@@ -581,38 +655,100 @@ class OWASPChecker:
                     cvss="5.3"
                 )
 
-        # Sensitive files
-        for path, (sev, kw) in SENSITIVE_FILES.items():
-            r = self._get(f"{self.base}{path}")
-            if r and r.status_code == 200:
-                content = r.text.lower()
-                if not kw or any(
-                    k in content
-                    for k in kw.split("|")
-                ):
-                    self._add(
-                        "A02:2025",
-                        "Security Misconfiguration",
-                        sev,
-                        f"Sensitive File Exposed: {path}",
-                        f"Path {self.base}{path} is publicly "
-                        "accessible (HTTP 200). May expose "
-                        "credentials, source code, or server "
-                        "configuration.",
-                        evidence=(
-                            f"GET {self.base}{path} → 200 "
-                            f"({len(r.text)} bytes)"
-                        ),
-                        fix=(
-                            f"Remove {path} from web root. "
-                            "Block access with .htaccess:\n"
-                            "<Files .env>\n"
-                            "  Require all denied\n"
-                            "</Files>"
-                        ),
-                        cwe="CWE-200",
-                        cvss="7.5"
-                    )
+        # ── Sensitive files — PARALLEL ───────────────
+        # All 35+ files checked simultaneously
+        # instead of one-by-one
+        from concurrent.futures import (
+            ThreadPoolExecutor, as_completed
+        )
+
+        def _check_one_file(args):
+            """Check single file — runs in thread."""
+            path, (sev, kw) = args
+            try:
+                r = self._get(
+                    f"{self.base}{path}"
+                )
+                if r and r.status_code == 200:
+                    content = r.text.lower()
+
+                    # False-positive prevention:
+                    # SPA apps return 200 for ALL paths
+                    # with same HTML content
+                    is_spa = any(s in content for s in [
+                        "<!doctype html",
+                        "<html",
+                        "bundle.js",
+                        "react.js",
+                        "angular",
+                    ])
+
+                    # For log files — verify real log
+                    if path.endswith(".log") and is_spa:
+                        return None
+
+                    # Check keyword match
+                    if not kw or any(
+                        k in content
+                        for k in kw.split("|")
+                    ):
+                        return {
+                            "path":    path,
+                            "sev":     sev,
+                            "size":    len(r.text),
+                            "content": content[:200],
+                        }
+            except Exception:
+                pass
+            return None
+
+        # Run ALL file checks in parallel
+        # max_workers=20 means 20 simultaneous requests
+        file_findings = []
+        with ThreadPoolExecutor(
+            max_workers=20
+        ) as executor:
+            futures = {
+                executor.submit(
+                    _check_one_file, item
+                ): item
+                for item in SENSITIVE_FILES.items()
+            }
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    if result:
+                        file_findings.append(result)
+                except Exception:
+                    pass
+
+        # Add all file findings
+        for result in file_findings:
+            self._add(
+                "A02:2025",
+                "Security Misconfiguration",
+                result["sev"],
+                f"Sensitive File Exposed: {result['path']}",
+                f"Path {self.base}{result['path']} is "
+                "publicly accessible (HTTP 200). "
+                "May expose credentials, source code, "
+                "or server configuration.",
+                evidence=(
+                    f"GET {self.base}{result['path']}"
+                    f" → 200 ({result['size']} bytes)"
+                ),
+                fix=(
+                    f"Remove {result['path']} from "
+                    "web root.\n"
+                    "Block access with .htaccess:\n"
+                    "<Files .env>\n"
+                    "  Require all denied\n"
+                    "</Files>"
+                ),
+                cwe="CWE-200",
+                cvss="7.5"
+            )
+        # ── End parallel file check ───────────────────
 
         # Directory listing
         if ("Index of /" in resp.text and
@@ -816,8 +952,7 @@ class OWASPChecker:
 
         # External scripts without SRI
         sri_pattern = re.compile(
-            r'<script[^>]+src=["\']'
-            r'(https?://[^"\']+)["\'][^>]*>',
+            r'<\s*script[^>]*src\s*=\s*["\'](https?://[^"\']+)["\']',
             re.IGNORECASE
         )
         sri_count = 0
@@ -1020,13 +1155,42 @@ class OWASPChecker:
 
         # ── SQL INJECTION ────────────────────────────
         found_sqli = False
-        params_to_test = [
+        # Mix static common params with dynamically discovered ones
+        params_to_test = list(set([
             "id", "user", "username", "q",
             "search", "query", "page", "cat",
             "category", "item", "product",
             "order", "sort", "filter", "key",
             "name", "email", "type", "action",
-        ]
+        ]) | self.discovered_params)
+
+        # Also test discovered forms via POST
+        for form in self.discovered_forms:
+            if found_sqli: break
+            if form["method"] == "POST":
+                action_url = form["action"]
+                if action_url.startswith("/"):
+                    action_url = self.base + action_url
+                elif not action_url.startswith("http"):
+                    action_url = self.base + "/" + action_url
+
+                for payload, pname in SQLI_PAYLOADS:
+                    if found_sqli: break
+                    for param in form["params"]:
+                        data = {p: "test" for p in form["params"]}
+                        data[param] = payload
+                        r = self._post(action_url, data=data)
+                        if r and any(e in r.text.lower() for e in DB_ERRORS):
+                            self._add(
+                                "A05:2025", "Injection", "CRITICAL",
+                                f"SQL Injection (POST) — {form['action']}",
+                                f"SQL injection detected in POST form at {form['action']} via parameter '{param}'.",
+                                evidence=f"POST {form['action']} | {param}={payload} → DB Error",
+                                fix="Use parameterized queries for all database operations.",
+                                cwe="CWE-89", cvss="9.8"
+                            )
+                            found_sqli = True
+                            break
 
         for payload, pname in SQLI_PAYLOADS:
             if found_sqli:
@@ -1232,40 +1396,48 @@ class OWASPChecker:
             if found:
                 break
 
-        # ── SERVER-SIDE TEMPLATE INJECTION ───────────
-        for payload, expected in SSTI_PAYLOADS.items():
-            url = self._build_url(
-                params={
-                    "q":    payload,
-                    "name": payload,
-                    "msg":  payload,
-                }
-            )
-            r = self._get(url)
-            if r and expected in r.text:
-                self._add(
-                    "A05:2025",
-                    "Injection",
-                    "CRITICAL",
-                    "Server-Side Template Injection (SSTI)",
-                    f"Template expression {payload} was evaluated "
-                    f"server-side (result: {expected}). "
-                    "RCE is achievable in Jinja2, Twig, Freemarker, "
-                    "Smarty, and most other template engines.",
-                    evidence=(
-                        f"Payload: {payload} "
-                        f"→ Result: {expected}"
-                    ),
-                    fix=(
-                        "Never render user input as template code.\n"
-                        "Use sandboxed template environments.\n"
-                        "Validate all inputs before template rendering.\n"
-                        "Separate user data from template logic."
-                    ),
-                    cwe="CWE-94",
-                    cvss="10.0"
+        # ── SERVER-SIDE TEMPLATE INJECTION (SSTI) ──────
+        # Baseline check to prevent "49" false positives
+        try:
+            baseline = self.session.get(self.target, timeout=8).text
+            ssti_unreliable = "49" in baseline
+        except:
+            ssti_unreliable = False
+
+        if not ssti_unreliable:
+            for payload, expected in SSTI_PAYLOADS.items():
+                url = self._build_url(
+                    params={
+                        "q":    payload,
+                        "name": payload,
+                        "msg":  payload,
+                    }
                 )
-                break
+                r = self._get(url)
+                if r and expected in r.text:
+                    self._add(
+                        "A05:2025",
+                        "Injection",
+                        "CRITICAL",
+                        "Server-Side Template Injection (SSTI)",
+                        f"Template expression {payload} was evaluated "
+                        f"server-side (result: {expected}). "
+                        "RCE is achievable in Jinja2, Twig, Freemarker, "
+                        "Smarty, and most other template engines.",
+                        evidence=(
+                            f"Payload: {payload} "
+                            f"→ Result: {expected}"
+                        ),
+                        fix=(
+                            "Never render user input as template code.\n"
+                            "Use sandboxed template environments.\n"
+                            "Validate all inputs before template rendering.\n"
+                            "Separate user data from template logic."
+                        ),
+                        cwe="CWE-94",
+                        cvss="10.0"
+                    )
+                    break
 
         # ── LDAP INJECTION ───────────────────────────
         ldap_payloads = [
@@ -1449,61 +1621,42 @@ class OWASPChecker:
             "/api/v1/auth/login",
         ]
         found_default = False
-        for path in login_paths:
-            if found_default:
-                break
-            for uname, passwd in default_creds:
-                for payload in [
-                    {"username": uname,
-                     "password": passwd},
-                    {"email":
-                     f"{uname}@example.com",
-                     "password": passwd},
-                    {"login":    uname,
-                     "password": passwd},
-                ]:
-                    r = self._post(
-                        f"{self.base}{path}",
-                        json_data=payload
-                    )
+        # ── Parallelized Auth Check ────────────────────────
+
+        def check_auth(params):
+            path, (uname, passwd) = params
+            for payload in [
+                {"username": uname, "password": passwd},
+                {"email": f"{uname}@example.com", "password": passwd},
+                {"login": uname, "password": passwd},
+            ]:
+                try:
+                    r = self._post(f"{self.base}{path}", json_data=payload)
                     if r and r.status_code == 200:
                         body = r.text.lower()
-                        if any(s in body for s in [
-                            "token", "bearer",
-                            "access_token", "success",
-                            "dashboard", "welcome",
-                            "logged in", "auth",
-                        ]):
-                            self._add(
-                                "A07:2025",
-                                "Authentication Failures",
-                                "CRITICAL",
-                                "Default Credentials Accepted",
-                                f"Application accepted "
-                                f"{uname}:{passwd} at {path}. "
-                                "Admin access granted without "
-                                "any exploitation technique.",
-                                evidence=(
-                                    f"POST {path} "
-                                    f"{uname}:{passwd} "
-                                    "→ 200 + auth token"
-                                ),
-                                fix=(
-                                    "1. Remove all default creds.\n"
-                                    "2. Force password change on "
-                                    "first login.\n"
-                                    "3. Enforce strong password "
-                                    "policy.\n"
-                                    "4. Implement MFA.\n"
-                                    "5. Lock after 5 failures."
-                                ),
-                                cwe="CWE-521",
-                                cvss="9.8",
-                                sans="SANS #13"
-                            )
-                            found_default = True
-                            break
-                if found_default:
+                        if any(s in body for s in ["token", "bearer", "access_token", "success", "dashboard", "welcome", "logged in", "auth"]):
+                            return (path, uname, passwd)
+                except:
+                    pass
+            return None
+
+        auth_tasks = []
+        for path in login_paths:
+            for cred in default_creds:
+                auth_tasks.append((path, cred))
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            for result in executor.map(check_auth, auth_tasks):
+                if result:
+                    path, uname, passwd = result
+                    self._add(
+                        "A07:2025", "Authentication Failures", "CRITICAL",
+                        "Default Credentials Accepted",
+                        f"Application accepted {uname}:{passwd} at {path}. Admin access granted without exploitation.",
+                        evidence=f"POST {path} {uname}:{passwd} → 200",
+                        fix="Remove default creds, enforce strong password policy, MFA.",
+                        cwe="CWE-521", cvss="9.8"
+                    )
                     break
 
         # Weak session tokens
@@ -1744,32 +1897,31 @@ class OWASPChecker:
             "segmentation fault",
             "out of memory",
         ]
-        for suffix, payload in exception_tests:
+        # ── Parallelized Exception Tests ────────────────────
+        def check_exception(params):
+            suffix, payload = params
             url = f"{self.target}{suffix}{payload}"
-            r = self._get(url)
-            if r and r.status_code == 500:
-                body = r.text.lower()
-                if any(s in body for s in exception_signs):
+            try:
+                r = self._get(url)
+                if r and r.status_code == 500:
+                    body = r.text.lower()
+                    if any(s in body for s in ["exception", "error occurred", "unhandled", "fatal error", "500 internal server error", "application error"]):
+                        return (payload, r.text[:200])
+            except:
+                pass
+            return None
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            for result in executor.map(check_exception, exception_tests):
+                if result:
+                    payload, body_snippet = result
                     self._add(
-                        "A10:2025",
-                        "Mishandling of Exceptional Conditions",
-                        "MEDIUM",
+                        "A10:2025", "Mishandling of Exceptional Conditions", "MEDIUM",
                         "Unhandled Exception Exposed",
-                        "Application returns unhandled exception "
-                        "details to users. Reveals internal "
-                        "structure and aids targeted attacks.",
-                        evidence=(
-                            f"Input: {payload[:30]} "
-                            f"→ HTTP 500 + exception details"
-                        ),
-                        fix=(
-                            "Implement global exception handlers.\n"
-                            "Return generic error messages to users.\n"
-                            "Log exceptions server-side only.\n"
-                            "Never expose exception details in prod."
-                        ),
-                        cwe="CWE-755",
-                        cvss="5.3"
+                        "Application returns unhandled exception details. Reveals internal structure.",
+                        evidence=f"Input: {payload[:30]} → HTTP 500",
+                        fix="Implement global exception handlers, log server-side only.",
+                        cwe="CWE-755", cvss="5.3"
                     )
                     break
 

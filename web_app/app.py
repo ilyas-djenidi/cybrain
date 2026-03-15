@@ -146,7 +146,7 @@ def scan_url():
         url_safe = url
 
         print(f"\n[SCAN_URL] Starting: {url}")
-        print("[SCAN_URL] This may take 3-8 minutes...")
+        print("[SCAN_URL] This may take 1-3 minutes (Optimized)...")
 
         from url_scanner import UrlScanner
         scanner = UrlScanner(url)
@@ -396,7 +396,7 @@ def chat():
         if cached:
             return jsonify({
                 "response": cached,
-                "model":    "Gemini 2.0 Flash (cached)"
+                "model":    "Cybrain Offline Engine (cached)"
             })
 
         agent    = CybrainAgent()
@@ -408,7 +408,7 @@ def chat():
 
         return jsonify({
             "response": response,
-            "model":    "Gemini 2.0 Flash"
+            "model":    "Cybrain Offline Engine"
         })
 
     except Exception as e:
@@ -519,6 +519,6 @@ if __name__ == '__main__':
         debug=True,
         host='0.0.0.0',
         port=5000,
-        use_reloader=True,
-        threaded=True        # Handle multiple requests
+        use_reloader=False,  # Prevent 502 errors during long scans
+        threaded=True
     )

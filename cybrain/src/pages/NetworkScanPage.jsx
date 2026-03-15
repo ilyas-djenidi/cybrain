@@ -146,8 +146,7 @@ const NetworkScanPage = () => {
                                 NETWORK <span className="text-cyan-400">RECON</span>
                             </h1>
                             <p className="text-gray-500 font-inter text-sm max-w-2xl leading-relaxed">
-                                Perimeter discovery engine. Surface vulnerabilities, open ports, and service banners.
-                                Powered by Cybrain static analysis & Gemini AI intelligence.
+                                Powered by Cybrain high-speed static analysis & offline intelligence.
                             </p>
                         </div>
                         {/* Quick Targets REMOVED as requested */}
@@ -264,7 +263,7 @@ const NetworkScanPage = () => {
                                         <div className="flex items-center justify-between mb-8">
                                             <div>
                                                 <h3 className="font-orbitron font-bold text-sm text-purple-400 tracking-widest uppercase mb-1 flex items-center gap-2">
-                                                    🤖 AI SURFACE AUDIT
+                                                    🤖 OFFLINE SURFACE AUDIT
                                                 </h3>
                                                 <p className="text-[10px] text-gray-500">Expert interpretation of infrastructure risk</p>
                                             </div>
@@ -273,7 +272,7 @@ const NetworkScanPage = () => {
                                                 disabled={analyzing}
                                                 className="px-6 py-2.5 bg-purple-500/10 border border-purple-500/30 rounded-xl text-[10px] font-orbitron text-purple-400 hover:bg-purple-500 hover:text-black transition-all disabled:opacity-30"
                                             >
-                                                {analyzing ? 'AUDITING...' : 'RUN AI AUDIT'}
+                                                {analyzing ? 'AUDITING...' : 'RUN OFFLINE AUDIT'}
                                             </button>
                                         </div>
                                         {aiAnalysis && (
@@ -449,7 +448,7 @@ const NetworkScanPage = () => {
                                     </div>
                                     <p className="text-gray-700 text-[10px]
                                                   font-inter mt-4">
-                                        Estimated time: 2-5 minutes
+                                        Estimated time: 1-2 minutes (High-Speed)
                                     </p>
                                 </motion.div>
                             ) : (

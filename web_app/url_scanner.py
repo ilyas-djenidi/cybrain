@@ -120,7 +120,28 @@ class UrlScanner:
                 "line": "-"
             })
 
+        self.last_findings = formatted_results
         return formatted_results
+
+    def _calc_overall_risk(self):
+        """Calculate overall risk based on findings."""
+        # This mirrors the logic in app.py for consistency
+        # although app.py also tries to call it directly.
+        # We'll implement a robust version here.
+        try:
+            # We need to re-scan findings if they aren't stored, 
+            # or just use a default if called before scan.
+            # But usually it's called after scan().
+            # Let's just return a default for now if no findings, 
+            # or better, store findings in self.
+            if hasattr(self, 'last_findings'):
+                sevs = [f['severity'] for f in self.last_findings]
+                for s in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']:
+                    if s in sevs:
+                        return s
+            return 'INFO'
+        except:
+            return 'INFO'
 
 if __name__ == "__main__":
     import sys
