@@ -367,6 +367,12 @@ class NetworkVulnScanner:
     # ── UNENCRYPTED PROTOCOLS ─────────────────────────────────────────────
     def _check_unencrypted_services(self, port: int, service: str):
         if port in UNENCRYPTED_PORTS:
+            # Dedup: Skip generic finding if a specific, higher-severity check exists
+            if port == 23:
+                return  # Handled by _check_telnet (CRITICAL)
+            if port == 80:
+                return  # Handled by _check_web_services (HIGH)
+
             self._add(
                 "MEDIUM",
                 f"Unencrypted Protocol - Port {port} ({service})",
