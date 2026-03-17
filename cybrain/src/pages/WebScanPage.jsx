@@ -4,12 +4,6 @@ import axios from 'axios';
 import SeverityBadge from '../components/SeverityBadge';
 import { sortBySeverity } from '../utils/logicProtection';
 
-const SAFE_TARGETS = [
-    'http://testphp.vulnweb.com',
-    'https://demo.testfire.net',
-    'http://zero.webappsecurity.com',
-    'https://juice-shop.herokuapp.com',
-];
 
 const WebScanPage = () => {
     const [url, setUrl]           = useState('');

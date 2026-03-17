@@ -505,11 +505,7 @@ def download_report():
         resp = _send_report_file("vulnerability_report.md", "vulnerability_report.md")
         if resp:
             return resp
-        placeholder = "# Vulnerability Report\n\nNo scan has been run yet.\nRun a scan first, then export.\n"
-        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8")
-        tmp.write(placeholder)
-        tmp.close()
-        return send_file(tmp.name, as_attachment=True, download_name="vulnerability_report.md")
+        return jsonify({"error": "No report available. Please run a scan first."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -59,18 +59,7 @@ const CodeScanPage = () => {
             });
         } catch(e) {
             console.error('[CODE SCAN ERROR]', e);
-            if (e.code === 'ECONNREFUSED' || e.response?.status === 502) {
-                setResult({
-                    filename: fname,
-                    language: 'Error',
-                    lines: 0,
-                    findings: [{
-                        severity: 'HIGH',
-                        code: 'Backend Offline',
-                        message: 'Flask backend is not running. Please start <code>app.py</code>.'
-                    }]
-                });
-            }
+            alert(`Error: ${e.response?.data?.error || e.message}`);
         } finally {
             setLoading(false);
         }
