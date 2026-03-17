@@ -19,8 +19,14 @@ const ApacheScanPage = () => {
         const selected = e.target.files[0];
         if (selected) {
             setFile(selected);
-            setContent(''); // Clear manual text if file is chosen
             setHasScanned(false);
+            
+            // Read file content to display in textarea
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setContent(event.target.result);
+            };
+            reader.readAsText(selected);
         }
     };
 
@@ -138,10 +144,10 @@ const ApacheScanPage = () => {
                                 </div>
                             </div>
                             <textarea
-                                value={file ? 'File uploaded: ' + file.name + '\n\n(Edit text to override file)' : content}
+                                value={content}
                                 onChange={(e) => {
                                     setContent(e.target.value);
-                                    if (file) setFile(null); // Switching back to manual text
+                                    if (file) setFile(null); // Switching back to manual text if edited
                                     setHasScanned(false);
                                 }}
                                 placeholder="Paste your httpd.conf, .htaccess or virtual host settings here..."
