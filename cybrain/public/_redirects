@@ -1,0 +1,16 @@
+# API Proxying
+/scan_url              https://cybrain.onrender.com/scan_url              200
+/scan_network          https://cybrain.onrender.com/scan_network          200
+/analyze               https://cybrain.onrender.com/analyze               200
+/analyze_code          https://cybrain.onrender.com/analyze_code          200
+/fix_code              https://cybrain.onrender.com/fix_code              200
+/fix_config            https://cybrain.onrender.com/fix_config            200
+/api/*                 https://cybrain.onrender.com/api/:splat            200
+/download_report       https://cybrain.onrender.com/download_report       200
+/download_report_csv   https://cybrain.onrender.com/download_report_csv   200
+/download_report_json  https://cybrain.onrender.com/download_report_json  200
+/download_fixed/*     https://cybrain.onrender.com/download_fixed/:splat  200
+/health                https://cybrain.onrender.com/health                200
+
+# SPA Routing
+/*  /index.html  200

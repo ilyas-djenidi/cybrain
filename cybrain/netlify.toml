@@ -1,0 +1,13 @@
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# Optional: Add environment variables here if you want to hardcode them, 
+# although Netlify UI is better for sensitive keys.
+[build.environment]
+  NODE_VERSION = "20"
