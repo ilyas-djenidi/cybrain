@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import SeverityBadge from '../components/SeverityBadge';
 import { sortBySeverity } from '../utils/logicProtection';
@@ -10,6 +11,7 @@ const ApacheScanPage = () => {
     const [loading, setLoading] = useState(false);
     const [fixing,  setFixing]  = useState(false);
     const [findings, setFindings] = useState([]);
+    const [hasScanned, setHasScanned] = useState(false);
     const [fixResult, setFixResult] = useState(null);
     const [expanded, setExpanded] = useState({});
 
@@ -18,6 +20,7 @@ const ApacheScanPage = () => {
         if (selected) {
             setFile(selected);
             setContent(''); // Clear manual text if file is chosen
+            setHasScanned(false);
         }
     };
 
@@ -25,6 +28,7 @@ const ApacheScanPage = () => {
         if (!content.trim() && !file) return;
         setLoading(true);
         setFindings([]);
+        setHasScanned(false);
         setFixResult(null);
         try {
             let data;
@@ -47,6 +51,7 @@ const ApacheScanPage = () => {
             const raw = data.findings || data.results || [];
             const sorted = sortBySeverity(raw);
             setFindings(sorted);
+            setHasScanned(true);
         } catch(e) {
             console.error('[APACHE SCAN ERROR]', e);
             if (e.code === 'ECONNREFUSED' || e.response?.status === 502) {
@@ -55,6 +60,7 @@ const ApacheScanPage = () => {
                     code: 'Backend Offline',
                     message: 'Flask backend is not running. Start <code>app.py</code> in the web_app folder.'
                 }]);
+                setHasScanned(true);
             }
         } finally {
             setLoading(false);
@@ -94,7 +100,7 @@ const ApacheScanPage = () => {
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="mb-10">
-                    <a href="/" className="text-cyan-500/60 text-[10px] font-orbitron tracking-widest uppercase hover:text-cyan-400 mb-6 inline-flex items-center gap-2">← Back to Dashboard</a>
+                    <Link to="/" className="text-cyan-500/60 text-[10px] font-orbitron tracking-widest uppercase hover:text-cyan-400 mb-6 inline-flex items-center gap-2">← Back to Dashboard</Link>
                     <h1 className="font-orbitron font-black text-3xl md:text-5xl text-white tracking-wider mb-3">
                         APACHE <span className="text-cyan-400">CONFIG</span> AUDIT
                     </h1>
@@ -114,7 +120,7 @@ const ApacheScanPage = () => {
                                 <div className="flex gap-2">
                                     {file && (
                                         <button 
-                                            onClick={() => {setFile(null); setContent('');}}
+                                            onClick={() => {setFile(null); setContent(''); setHasScanned(false);}}
                                             className="text-[9px] font-orbitron text-red-400/60 hover:text-red-400 uppercase tracking-widest"
                                         >
                                             [ Clear File ]
@@ -136,6 +142,7 @@ const ApacheScanPage = () => {
                                 onChange={(e) => {
                                     setContent(e.target.value);
                                     if (file) setFile(null); // Switching back to manual text
+                                    setHasScanned(false);
                                 }}
                                 placeholder="Paste your httpd.conf, .htaccess or virtual host settings here..."
                                 className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-gray-300 font-mono text-sm resize-none h-[400px] md:h-[500px] focus:outline-none focus:border-cyan-400/50 transition-all shadow-inner"
@@ -144,7 +151,7 @@ const ApacheScanPage = () => {
 
                         <button
                             onClick={handleAnalyze}
-                            disabled={!content.trim() || loading}
+                            disabled={(!content.trim() && !file) || loading}
                             className="w-full py-5 bg-gradient-to-r from-cyan-500/80 to-purple-600/80 text-white font-orbitron font-black tracking-[0.2em] text-xs uppercase rounded-2xl hover:shadow-[0_0_40px_rgba(0,245,212,0.2)] transition-all disabled:opacity-30 border border-white/10 hover:border-cyan-500/50"
                         >
                             {loading ? '⟳ EXECUTING AUDIT...' : '▶ DISPATCH AUDIT'}
@@ -225,6 +232,20 @@ const ApacheScanPage = () => {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
+                            </motion.div>
+                        ) : hasScanned && !loading ? (
+                            <motion.div 
+                                initial={{ opacity:0 }}
+                                animate={{ opacity:1 }}
+                                className="scanner-glass rounded-3xl p-16 text-center border border-green-500/20 h-full flex flex-col justify-center min-h-[400px] shadow-xl shadow-green-500/5"
+                            >
+                                <div className="text-6xl mb-6">🛡️</div>
+                                <p className="text-green-400 font-orbitron text-xs tracking-[0.2em] uppercase">
+                                    Audit Complete: No Issues Detected
+                                </p>
+                                <p className="text-gray-500 font-inter text-xs mt-3">
+                                    Your Apache configuration adheres to all enabled security benchmarks.
+                                </p>
                             </motion.div>
                         ) : !loading ? (
                             <div className="scanner-glass rounded-3xl p-16 text-center border-2 border-dashed border-white/5 h-full flex flex-col justify-center min-h-[400px]">
