@@ -6,23 +6,44 @@ import { sortBySeverity } from '../utils/logicProtection';
 
 const ApacheScanPage = () => {
     const [content, setContent] = useState('');
+    const [file, setFile]       = useState(null);
     const [loading, setLoading] = useState(false);
     const [fixing,  setFixing]  = useState(false);
     const [findings, setFindings] = useState([]);
     const [fixResult, setFixResult] = useState(null);
     const [expanded, setExpanded] = useState({});
 
+    const handleFileChange = (e) => {
+        const selected = e.target.files[0];
+        if (selected) {
+            setFile(selected);
+            setContent(''); // Clear manual text if file is chosen
+        }
+    };
+
     const handleAnalyze = async () => {
-        if (!content.trim()) return;
+        if (!content.trim() && !file) return;
         setLoading(true);
         setFindings([]);
         setFixResult(null);
         try {
-            const { data } = await axios.post(
-                '/analyze',
-                { content: content },
-                { headers: {'Content-Type':'application/json'}}
-            );
+            let data;
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await axios.post('/analyze', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                data = res.data;
+            } else {
+                const res = await axios.post(
+                    '/analyze',
+                    { content: content },
+                    { headers: {'Content-Type':'application/json'}}
+                );
+                data = res.data;
+            }
+
             const raw = data.findings || data.results || [];
             const sorted = sortBySeverity(raw);
             setFindings(sorted);
@@ -41,15 +62,11 @@ const ApacheScanPage = () => {
     };
 
     const handleFix = async () => {
-        if (!content.trim()) return;
+        if (!content.trim() && !file) return;
         setFixing(true);
         try {
-            const { data } = await axios.post(
-                '/fix_config',
-                {
-                    config:   content
-                }
-            );
+            const payload = file ? { config: await file.text() } : { config: content };
+            const { data } = await axios.post('/fix_config', payload);
             setFixResult(data);
         } catch(e) {
             console.error(e);
@@ -90,12 +107,36 @@ const ApacheScanPage = () => {
                     {/* Left - Input */}
                     <div className="space-y-6">
                         <div className="scanner-glass rounded-3xl p-6 md:p-8 border border-white/5">
-                            <label className="text-gray-500 text-[10px] font-orbitron font-bold tracking-[0.2em] uppercase mb-5 block">
-                                Configuration Stream
-                            </label>
+                            <div className="flex items-center justify-between mb-5">
+                                <label className="text-gray-500 text-[10px] font-orbitron font-bold tracking-[0.2em] uppercase">
+                                    {file ? `File: ${file.name}` : 'Configuration Stream'}
+                                </label>
+                                <div className="flex gap-2">
+                                    {file && (
+                                        <button 
+                                            onClick={() => {setFile(null); setContent('');}}
+                                            className="text-[9px] font-orbitron text-red-400/60 hover:text-red-400 uppercase tracking-widest"
+                                        >
+                                            [ Clear File ]
+                                        </button>
+                                    )}
+                                    <label className="cursor-pointer px-4 py-2 bg-white/5 border border-white/10 text-cyan-400 font-orbitron text-[9px] tracking-widest uppercase rounded-xl hover:bg-cyan-500 hover:text-black transition-all">
+                                        Upload Config
+                                        <input 
+                                            type="file" 
+                                            className="hidden" 
+                                            onChange={handleFileChange}
+                                            accept=".conf,.htaccess,text/plain"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
                             <textarea
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
+                                value={file ? 'File uploaded: ' + file.name + '\n\n(Edit text to override file)' : content}
+                                onChange={(e) => {
+                                    setContent(e.target.value);
+                                    if (file) setFile(null); // Switching back to manual text
+                                }}
                                 placeholder="Paste your httpd.conf, .htaccess or virtual host settings here..."
                                 className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-gray-300 font-mono text-sm resize-none h-[400px] md:h-[500px] focus:outline-none focus:border-cyan-400/50 transition-all shadow-inner"
                             />
