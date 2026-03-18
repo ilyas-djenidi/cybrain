@@ -576,20 +576,37 @@ class OWASPChecker:
         ]
         for path in idor_paths:
             r = self._get(f"{self.base}{path}")
-            if r and r.status_code == 200:
-                body = r.text.lower()
-                is_html = any(s in body for s in ["<!doctype html", "<html", "<body"])
-                is_json = "application/json" in r.headers.get("Content-Type", "").lower()
-                # Real IDOR leaks typically happen in JSON API responses, rarely in generic HTML pages (which could be WAF blocks).
-                if not is_html and is_json and any(s in body for s in [
-                    "email", "username", "password", "address",
-                    "phone", "credit", "firstname", "lastname",
-                ]):
+            if not r or r.status_code != 200:
+                continue
+                
+            # Require JSON response - WAF pages are HTML
+            content_type = r.headers.get("Content-Type", "")  # type: ignore
+            if "application/json" not in content_type:
+                continue
+            
+            # Try to parse as JSON - real APIs return parseable JSON
+            try:
+                data = r.json()  # type: ignore
+            except Exception:
+                continue
+                
+            # Check for PII fields in parsed JSON keys/values
+            json_str = json.dumps(data).lower()
+            pii_fields = ["email", "phone", "address", "password", 
+                          "firstname", "lastname", "credit", "username"]
+            
+            if any(f in json_str for f in pii_fields):
+                # Extra: compare with an obviously invalid ID
+                base_dir = path.rsplit("/", 1)[0]
+                r_invalid = self._get(f"{self.base}{base_dir}/99999999")
+                
+                # Only flag if valid ID returns 200+JSON, but invalid returns 404 (or error) = real IDOR
+                if r_invalid and (r_invalid.status_code in [404, 401, 403, 500]):
                     self._add(
                         "A01:2025", "Broken Access Control", "HIGH",
                         "Insecure Direct Object Reference (IDOR)",
-                        f"Endpoint {path} returns user PII without authorization.",
-                        evidence=f"GET {self.base}{path} -> 200 + PII",
+                        f"Endpoint {path} returns user PII without authorization. Invalid ID check confirmed baseline.",
+                        evidence=f"GET {path} -> 200 + PII\nGET {base_dir}/99999999 -> {r_invalid.status_code} (Confirmed API behavior)",
                         fix=(
                             "1. Verify authenticated user owns the resource.\n"
                             "2. Use UUIDs instead of sequential IDs.\n"
@@ -1839,26 +1856,34 @@ class OWASPChecker:
         ]) | self.discovered_params)
         for true_pl, false_pl in SQLI_BOOLEAN_PAYLOADS:
             for param in params_to_test:
+                url_base = self._build_url(params={param: "1"})  # type: ignore
+                r_base = self._get(url_base)  # type: ignore
+                if not r_base:
+                    continue
+                base_len = len(r_base.text)
+
                 url_true  = self._build_url(params={param: true_pl})  # type: ignore
                 url_false = self._build_url(params={param: false_pl})  # type: ignore
                 r_true  = self._get(url_true)  # type: ignore
                 r_false = self._get(url_false)  # type: ignore
                 if not r_true or not r_false:
                     continue
-                # Significant difference in response length = boolean blind
-                diff = abs(len(str(r_true.text)) - len(str(r_false.text)))  # type: ignore
-                if (diff > 50 and
+                
+                # Only flag if TRUE gives normal response and FALSE diverges significantly
+                diff_true = abs(len(str(r_true.text)) - base_len)  # type: ignore
+                diff_false = abs(len(str(r_false.text)) - base_len)  # type: ignore
+
+                if (diff_true < 20 and diff_false > 100 and
                         r_true.status_code == 200 and  # type: ignore
                         r_false.status_code == 200):  # type: ignore
                     self._add(
                         "A05:2025", "Injection", "CRITICAL",
                         "SQL Injection - Boolean-Based Blind",
-                        f"Boolean SQLi via '{param}'. True condition returns "
-                        f"{len(str(r_true.text))}b, false returns {len(str(r_false.text))}b "  # type: ignore
-                        f"(diff={diff}b). Full DB extraction possible with sqlmap.",
+                        f"Boolean SQLi via '{param}'. True condition differs from baseline by {diff_true} bytes, "
+                        f"while false condition differs by {diff_false} bytes. "
+                        f"This confirms boolean blind responsiveness vs baseline ({base_len}b).",
                         evidence=(
-                            f"?{param}={str(true_pl)[:30]} -> {len(str(r_true.text))}b | "  # type: ignore
-                            f"?{param}={str(false_pl)[:30]} -> {len(str(r_false.text))}b"  # type: ignore
+                            f"Base: {base_len}b | True: {len(str(r_true.text))}b (diff={diff_true}) | False: {len(str(r_false.text))}b (diff={diff_false})"  # type: ignore
                         ),
                         fix=(
                             "1. Use parameterized queries exclusively.\n"
