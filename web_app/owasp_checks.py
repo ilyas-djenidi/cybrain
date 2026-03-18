@@ -963,8 +963,8 @@ class OWASPChecker:
         found_sqli = False
         for form in self.discovered_forms:
             if found_sqli: break
-            if form["method"] == "POST":
-                action_url = form["action"]
+            if str(form.get("method", "")).upper() == "POST":
+                action_url = str(form.get("action", ""))
                 if action_url.startswith("/"):
                     action_url = self.base + action_url
                 elif not action_url.startswith("http"):

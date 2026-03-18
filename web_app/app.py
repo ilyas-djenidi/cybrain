@@ -277,7 +277,7 @@ def scan_network():
     target_info = "Unknown"
     try:
         data   = request.get_json(force=True) or {}
-        target = data.get("target", "").strip()
+        target = str(data.get("target", "")).strip()
         if not target:
             return jsonify({"error": "No target provided"}), 400
 
@@ -336,8 +336,8 @@ def analyze_code():
             content  = f.read().decode("utf-8", errors="ignore")
         elif request.is_json:
             data     = request.get_json(force=True) or {}
-            content  = data.get("code", "")
-            filename = data.get("filename", "code.txt")
+            content  = str(data.get("code", ""))
+            filename = str(data.get("filename", "code.txt"))
 
         if not content or not content.strip():
             return jsonify({"error": "Empty file or code"}), 400
@@ -463,8 +463,8 @@ def analyze_findings():
         from ai_agent import CybrainAgent
         data      = request.get_json(force=True) or {}
         findings  = data.get("findings", [])
-        target    = data.get("target", "")
-        scan_type = data.get("scan_type", "web")
+        target    = str(data.get("target", ""))
+        scan_type = str(data.get("scan_type", "web"))
 
         if not findings:
             return jsonify({"analysis": "No findings to analyse."}), 200
