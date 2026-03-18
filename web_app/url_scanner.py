@@ -33,13 +33,14 @@ import time
 import base64
 import types
 import threading
-import urllib3
+import urllib3  # type: ignore
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from ipaddress import ip_address, ip_network, AddressValueError
+from typing import TYPE_CHECKING, List
 
-import requests
+import requests  # type: ignore
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -105,6 +106,14 @@ class ExtendedChecks:
     Mixin class. Methods are bound onto an OWASPChecker instance at runtime.
     self.* references below resolve to OWASPChecker attributes.
     """
+    if TYPE_CHECKING:
+        base: str
+        target: str
+        timeout: int
+        session: 'requests.Session'
+        def _get(self, url: str, **kwargs) -> 'requests.Response': ...
+        def _post(self, url: str, **kwargs) -> 'requests.Response': ...
+        def _add(self, owasp_id: str, desc: str, sev: str, title: str, details: str, evidence: str = "", fix: str = "", cwe: str = "", cvss: str = "", sans: str = "") -> None: ...
 
     # ?? 1. RACE CONDITION (CWE-362) ????????????????????????????????????????
     def _race_condition_check(self):
@@ -401,7 +410,7 @@ class ExtendedChecks:
             "/v1", "/v2", "/v3",
             "/rest/v1", "/rest/v2",
         ]
-        exposed = []
+        exposed: List[str] = []
         for path in version_paths:
             r = self._get(f"{self.base}{path}")
             if r and r.status_code == 200:
@@ -413,9 +422,9 @@ class ExtendedChecks:
             self._add(
                 "A02:2025", "Security Misconfiguration", "LOW",
                 "Multiple API Versions Exposed",
-                f"Old API versions accessible: {', '.join(exposed[:5])}. "
+                f"Old API versions accessible: {', '.join(exposed[:5])}. "  # type: ignore
                 "Older versions often lack current security controls.",
-                evidence=f"HTTP 200: {', '.join(exposed[:5])}",
+                evidence=f"HTTP 200: {', '.join(exposed[:5])}",  # type: ignore
                 fix=(
                     "Deprecate and remove old API versions.\n"
                     "Return 410 Gone for retired versions."
@@ -531,7 +540,7 @@ class UrlScanner:
         print(f"[CYBRAIN] {'='*47}")
 
         # ?? OWASPChecker ???????????????????????????????????????????????????
-        from owasp_checks import OWASPChecker
+        from owasp_checks import OWASPChecker  # type: ignore
         checker = OWASPChecker(self.target_url, self.session)
         self._attach_extended(checker)
 
@@ -563,7 +572,7 @@ class UrlScanner:
                 "report",
             )
             os.makedirs(report_dir, exist_ok=True)
-            from report_generator import ReportGenerator
+            from report_generator import ReportGenerator  # type: ignore
             ReportGenerator(self.target_url, unique, report_dir).generate_all()
         except Exception as e:
             print(f"[!] Report generation failed: {e}")

@@ -1,5 +1,5 @@
-import requests
-import urllib3
+import requests  # type: ignore
+import urllib3  # type: ignore
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 target = 'https://pinkier.store'
