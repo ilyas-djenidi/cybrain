@@ -228,25 +228,6 @@ class NetworkScanner:
         # Insert recon summary as first INFO finding
         findings.insert(0, self._build_summary_finding())
 
-        # If full mode, inject a simulated Deep Packet Inspection finding
-        if self.recon_data.get("mode") == "full":
-            findings.append({
-                "severity": "INFO",
-                "title": "Professional Packet Analysis (DPI)",
-                "description": (
-                    "Analyzing live network traffic and intercepting packets "
-                    "for anomalous patterns. Intercepting TCP/UDP streams."
-                ),
-                "evidence": (
-                    "Captured 14,208 packets | 0 malicious signatures detected. "
-                    "Deep Packet Inspection requires Cybrain Agent Desktop for full decryption."
-                ),
-                "fix": "Ensure all internal traffic is encrypted (TLS 1.3) to prevent DPI-based exposure.",
-                "cve": "N/A",
-                "cvss": "0.0",
-                "port": None,
-                "target": self.target,
-            })
 
         self._raw_findings = findings
 

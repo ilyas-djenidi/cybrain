@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import SeverityBadge from '../components/SeverityBadge';
+import { isPrivateIP, runLocalScan } from '../utils/localScanner';
 
 /**
  * CYBRAIN — Network Reconnaissance Page
@@ -17,6 +18,8 @@ const NetworkScanPage = () => {
     const [aiAnalysis, setAiAnalysis] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
     const [permissionGranted, setPermissionGranted] = useState(false);
+    const [scanProgress, setScanProgress] = useState(0);
+    const [isLocalScan, setIsLocalScan] = useState(false);
 
     const scanModes = [
         { 
@@ -45,7 +48,7 @@ const NetworkScanPage = () => {
     const handleExecuteScan = async () => {
         if (!target.trim() || !permissionGranted) return;
         
-        let discoveryTarget = target.trim()
+        const discoveryTarget = target.trim()
             .replace(/^https?:\/\//, '')
             .split('/')[0]
             .split(':')[0];
@@ -54,34 +57,49 @@ const NetworkScanPage = () => {
         setResults(null);
         setError(null);
         setAiAnalysis('');
+        setScanProgress(0);
+
+        const privateTarget = isPrivateIP(discoveryTarget);
+        setIsLocalScan(privateTarget);
 
         try {
-            // Using a long timeout for network scans (8 minutes)
-            const { data } = await axios.post(
-                '/scan_network',
-                { target: discoveryTarget, mode: scanMode },
-                { 
-                    headers: { 'Content-Type': 'application/json' },
-                    timeout: 480000 
-                }
-            );
-            
-            if (data.findings && data.findings.length > 0) {
+            if (privateTarget) {
+                // ── CLIENT-SIDE BROWSER SCAN (LAN / Private IPs) ──────────────────
+                const data = await runLocalScan(
+                    discoveryTarget,
+                    scanMode,
+                    (done, total) => setScanProgress(Math.round((done / total) * 100))
+                );
                 setResults(data);
             } else {
-                setError("No services or vulnerabilities discovered on target.");
+                // ── SERVER-SIDE SCAN (Public IPs / Domains) ───────────────────────
+                const { data } = await axios.post(
+                    '/scan_network',
+                    { target: discoveryTarget, mode: scanMode },
+                    { 
+                        headers: { 'Content-Type': 'application/json' },
+                        timeout: 480000 
+                    }
+                );
+                
+                if (data.findings && data.findings.length > 0) {
+                    setResults(data);
+                } else {
+                    setError('No services or vulnerabilities discovered on target.');
+                }
             }
         } catch (e) {
             console.error('[NETWORK RECON ERROR]', e);
             if (e.response?.status === 502) {
-                setError("<strong>502 Bad Gateway</strong>: Backend is offline or crashing. Check Flask logs.");
+                setError('<strong>502 Bad Gateway</strong>: Backend is offline or crashing. Check Flask logs.');
             } else if (e.code === 'ECONNABORTED') {
-                setError("<strong>Scan Timeout</strong>: The target took too long to respond (8 min limit).");
+                setError('<strong>Scan Timeout</strong>: The target took too long to respond (8 min limit).');
             } else {
                 setError(`<strong>Error</strong>: ${e.response?.data?.error || e.message}`);
             }
         } finally {
             setLoading(false);
+            setScanProgress(100);
         }
     };
 
@@ -225,13 +243,30 @@ const NetworkScanPage = () => {
                                 </label>
                             </div>
 
+                            {/* Scan Mode Indicator */}
+                            {target.trim() && isPrivateIP(target.trim()) && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mt-4 px-4 py-3 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center gap-3"
+                                >
+                                    <span className="text-green-400 text-base">🌐</span>
+                                    <div>
+                                        <div className="text-[10px] font-orbitron text-green-400 font-bold tracking-widest uppercase">LAN Mode Detected</div>
+                                        <div className="text-[9px] text-gray-500 font-inter mt-0.5">Scan will run locally in your browser — no cloud needed</div>
+                                    </div>
+                                </motion.div>
+                            )}
+
                             <button
                                 onClick={handleExecuteScan}
                                 disabled={loading || !target.trim() || !permissionGranted}
                                 className={`w-full mt-6 py-5 font-orbitron font-bold text-xs tracking-[0.3em] uppercase rounded-2xl transition-all duration-300 border flex items-center justify-center gap-3 ${
                                     loading || !target.trim() || !permissionGranted
                                         ? 'border-white/5 bg-white/5 text-gray-600 cursor-not-allowed opacity-50' 
-                                        : 'border-cyan-500/50 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500 hover:text-black shadow-lg shadow-cyan-500/20'
+                                        : isPrivateIP(target.trim())
+                                            ? 'border-green-500/50 text-green-400 bg-green-500/5 hover:bg-green-500 hover:text-black shadow-lg shadow-green-500/20'
+                                            : 'border-cyan-500/50 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500 hover:text-black shadow-lg shadow-cyan-500/20'
                                 }`}
                             >
                                 {loading ? (
@@ -241,14 +276,31 @@ const NetworkScanPage = () => {
                                             <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
                                             <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
                                         </div>
-                                        <span>INITIALIZING...</span>
+                                        <span>{isLocalScan ? 'SCANNING LAN...' : 'INITIALIZING...'}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>▶ START SEQUENCE</span>
+                                        <span>{isPrivateIP(target.trim()) ? '🌐 SCAN LOCAL NETWORK' : '▶ START SEQUENCE'}</span>
                                     </>
                                 )}
                             </button>
+
+                            {/* Progress bar — only visible during local scans */}
+                            {loading && isLocalScan && (
+                                <div className="mt-3">
+                                    <div className="flex justify-between text-[9px] font-orbitron text-gray-600 uppercase tracking-widest mb-1.5">
+                                        <span>Probing ports...</span>
+                                        <span>{scanProgress}%</span>
+                                    </div>
+                                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className="h-full bg-gradient-to-r from-green-500 to-cyan-400 rounded-full"
+                                            style={{ width: `${scanProgress}%` }}
+                                            transition={{ ease: 'linear', duration: 0.3 }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
