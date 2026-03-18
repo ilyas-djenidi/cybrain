@@ -26,15 +26,16 @@ except Exception:
 
 # ── Safe print (no UnicodeEncodeError on Windows/Render) ──────
 if not hasattr(builtins, '_orig_print_cybrain'):
-    builtins._orig_print_cybrain = builtins.print
+    setattr(builtins, '_orig_print_cybrain', builtins.print)
 
 def safe_print(*args, **kwargs):
     try:
-        builtins._orig_print_cybrain(*args, **kwargs)
+        orig_print = getattr(builtins, '_orig_print_cybrain')
+        orig_print(*args, **kwargs)
     except (UnicodeEncodeError, BlockingIOError):
         try:
             ascii_args = [str(a).encode('ascii', 'replace').decode('ascii') for a in args]
-            builtins._orig_print_cybrain(*ascii_args, **kwargs)
+            orig_print(*ascii_args, **kwargs)
         except Exception:
             pass
     except Exception:
@@ -50,9 +51,9 @@ logging.basicConfig(
 )
 logging.info("Backend started")
 
-from flask import Flask, request, jsonify, send_file, Response
-from flask_cors import CORS
-from dotenv import load_dotenv
+from flask import Flask, request, jsonify, send_file, Response  # type: ignore
+from flask_cors import CORS  # type: ignore
+from dotenv import load_dotenv  # type: ignore
 
 load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -106,8 +107,8 @@ def _preflight():
     return resp
 
 # ── AI response cache (TTL=5min, max 200 entries) ─────────────
-_ai_cache:     dict = {}
-_ai_cache_ttl: dict = {}
+_ai_cache:     dict[str, str] = {}
+_ai_cache_ttl: dict[str, float] = {}
 CACHE_TTL = 300
 CACHE_MAX = 200
 
@@ -115,13 +116,15 @@ def _get_cache(key: str):
     if key in _ai_cache:
         if time.time() - _ai_cache_ttl[key] < CACHE_TTL:
             return _ai_cache[key]
-        del _ai_cache[key], _ai_cache_ttl[key]
+        _ai_cache.pop(key, None)  # type: ignore
+        _ai_cache_ttl.pop(key, None)  # type: ignore
     return None
 
 def _set_cache(key: str, value: str):
     if len(_ai_cache) >= CACHE_MAX:
         oldest = min(_ai_cache_ttl, key=lambda k: _ai_cache_ttl[k])
-        del _ai_cache[oldest], _ai_cache_ttl[oldest]
+        _ai_cache.pop(oldest, None)  # type: ignore
+        _ai_cache_ttl.pop(oldest, None)  # type: ignore
     _ai_cache[key]     = value
     _ai_cache_ttl[key] = time.time()
 
@@ -167,8 +170,7 @@ def health():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     try:
-        from detect_apache_misconf import ApacheMisconfigDetector
-        detector    = ApacheMisconfigDetector()
+        from detect_apache_misconf import detect_misconfigurations  # type: ignore
         content     = None
         source_name = "Input Text"
 
@@ -187,8 +189,7 @@ def analyze():
         if len(content) > 1_000_000:
             return jsonify({"error": "Config too large (max 1MB)"}), 400
 
-        detector.scan_content(content.strip(), source_name)
-        raw = detector.get_results()
+        raw = detect_misconfigurations(content.strip(), source_name)
 
         SEV_MAP = {
             "error":"CRITICAL","Error":"CRITICAL",
@@ -236,8 +237,8 @@ def scan_url():
         url_safe = url
 
         print(f"\n[SCAN_URL] Starting: {url}")
-        from url_scanner import UrlScanner
-        scanner = UrlScanner(url)
+        from url_scanner import URLScanner  # type: ignore
+        scanner = URLScanner(url)
         results = scanner.scan()
 
         if not isinstance(results, list):
@@ -283,14 +284,14 @@ def scan_network():
 
         for prefix in ("https://", "http://", "ftp://"):
             if target.startswith(prefix):
-                target = target[len(prefix):]
-        target      = target.split("/")[0].split(":")[0]
+                target = target[len(prefix):]  # type: ignore
+        target = str(target).split("/")[0].split(":")[0]
         target_info = target
 
         print(f"[SCAN_NETWORK] Target: {target}")
-        from network_scanner import NetworkScanner
+        from network_scanner import NetworkScanner  # type: ignore
         scanner = NetworkScanner(target)
-        results = scanner.scan()
+        results = scanner.scan(mode=data.get("mode", "ports"))  # type: ignore
 
         return jsonify({
             "findings": results, "total": len(results), "target": target,
@@ -325,7 +326,7 @@ def scan_network():
 @app.route("/analyze_code", methods=["POST"])
 def analyze_code():
     try:
-        from code_analyzer import CodeAnalyzer
+        from code_analyzer import CodeAnalyzer  # type: ignore
         analyzer = CodeAnalyzer()
         content  = None
         filename = "code.txt"
@@ -339,9 +340,9 @@ def analyze_code():
             content  = str(data.get("code", ""))
             filename = str(data.get("filename", "code.txt"))
 
-        if not content or not content.strip():
+        if not content or not str(content).strip():
             return jsonify({"error": "Empty file or code"}), 400
-        if len(content) > 500_000:
+        if len(str(content)) > 500_000:
             return jsonify({"error": "File too large (max 500KB)"}), 400
 
         result = analyzer.analyze(content, filename)
@@ -365,7 +366,7 @@ def analyze_code():
 @app.route("/fix_code", methods=["POST"])
 def fix_code():
     try:
-        from ai_agent import CybrainAgent
+        from ai_agent import CybrainAgent  # type: ignore
         data     = request.get_json(force=True) or {}
         content  = data.get("code", "")
         filename = data.get("filename", "code.txt")
@@ -401,7 +402,7 @@ def fix_code():
 @app.route("/fix_config", methods=["POST"])
 def fix_config():
     try:
-        from ai_agent import CybrainAgent
+        from ai_agent import CybrainAgent  # type: ignore
         data     = request.get_json(force=True) or {}
         config   = data.get("config", "")
         findings = data.get("findings", [])
@@ -427,7 +428,7 @@ def fix_config():
 @app.route("/api/chat", methods=["POST"])
 def chat():
     try:
-        from ai_agent import CybrainAgent
+        from ai_agent import CybrainAgent  # type: ignore
         data    = request.get_json(force=True) or {}
         message = data.get("message", "").strip()
         context = data.get("context", {})
@@ -460,7 +461,7 @@ def chat():
 @app.route("/api/analyze_findings", methods=["POST"])
 def analyze_findings():
     try:
-        from ai_agent import CybrainAgent
+        from ai_agent import CybrainAgent  # type: ignore
         data      = request.get_json(force=True) or {}
         findings  = data.get("findings", [])
         target    = str(data.get("target", ""))
@@ -555,14 +556,15 @@ if __name__ == "__main__":
     print("  CYBRAIN Backend v2.1 - Starting")
     print(f"  Gemini : {'SET [OK]' if os.environ.get('GEMINI_API_KEY') else 'NOT SET (offline mode)'}")
     print(f"{bar}")
-    for mod, label in [
+    for module_name, label in [
         ("url_scanner","URL Scanner"), ("network_scanner","Network Scanner"),
         ("owasp_checks","OWASP Checker"), ("code_analyzer","Code Analyzer"),
         ("ai_agent","AI Agent"), ("report_generator","Report Generator"),
         ("detect_apache_misconf","Apache Detector"),
     ]:
+        # Dynamic import for detection scripts
         try:
-            __import__(mod)
+            mod = __import__(module_name)  # type: ignore
             print(f"  [+] {label}")
         except ImportError as e:
             print(f"  [-] {label} - {e}")

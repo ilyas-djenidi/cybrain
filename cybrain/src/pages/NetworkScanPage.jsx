@@ -9,42 +9,10 @@ import SeverityBadge from '../components/SeverityBadge';
  */
 
 const NetworkScanPage = () => {
-    const [target, setTarget] = useState('');
-    const [scanMode, setScanMode] = useState('full');
-    const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState(null);
-    const [error, setError] = useState(null);
-    const [aiAnalysis, setAiAnalysis] = useState('');
-    const [analyzing, setAnalyzing] = useState(false);
-
-    // Common safe targets FORMERLY here — now removed as requested
-
-    const scanModes = [
-        { 
-            id: 'full', 
-            label: 'Deep Infiltration', 
-            desc: 'Comprehensive scan (Ports + Services + OS)', 
-            icon: '🔍',
-            color: 'cyan'
-        },
-        { 
-            id: 'ports', 
-            label: 'Port Discovery', 
-            desc: 'Identify all active entry points', 
-            icon: '⚡',
-            color: 'blue'
-        },
-        { 
-            id: 'quick', 
-            label: 'Surveillance Mode', 
-            desc: 'Rapid scan of common top 100 ports', 
-            icon: '📡',
-            color: 'purple'
-        }
-    ];
+    const [permissionGranted, setPermissionGranted] = useState(false);
 
     const handleExecuteScan = async () => {
-        if (!target.trim()) return;
+        if (!target.trim() || !permissionGranted) return;
         
         let discoveryTarget = target.trim()
             .replace(/^https?:\/\//, '')
@@ -57,7 +25,7 @@ const NetworkScanPage = () => {
         setAiAnalysis('');
 
         try {
-            // Using a long timeout for network scans (3 minutes)
+            // Using a long timeout for network scans (8 minutes)
             const { data } = await axios.post(
                 '/scan_network',
                 { target: discoveryTarget, mode: scanMode },
@@ -77,7 +45,7 @@ const NetworkScanPage = () => {
             if (e.response?.status === 502) {
                 setError("<strong>502 Bad Gateway</strong>: Backend is offline or crashing. Check Flask logs.");
             } else if (e.code === 'ECONNABORTED') {
-                setError("<strong>Scan Timeout</strong>: The target took too long to respond (3 min limit).");
+                setError("<strong>Scan Timeout</strong>: The target took too long to respond (8 min limit).");
             } else {
                 setError(`<strong>Error</strong>: ${e.response?.data?.error || e.message}`);
             }
@@ -122,9 +90,9 @@ const NetworkScanPage = () => {
             );
     };
 
-    const getSeverityCount = (sev) => {
+    const getSeverityCount = (statSev) => {
         if (!results?.findings) return 0;
-        return results.findings.filter(f => f.severity === sev).length;
+        return results.findings.filter(f => f.severity === statSev).length;
     };
 
     return (
@@ -198,12 +166,40 @@ const NetworkScanPage = () => {
                                 ))}
                             </div>
 
+                            {/* Permission Checkbox */}
+                            <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-2xl transition-all hover:border-cyan-500/30">
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <div className="relative mt-1">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={permissionGranted}
+                                            onChange={e => setPermissionGranted(e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 rounded border transition-all flex items-center justify-center ${
+                                            permissionGranted 
+                                                ? 'bg-cyan-500 border-cyan-500' 
+                                                : 'bg-black border-white/20 group-hover:border-cyan-500/50'
+                                        }`}>
+                                            {permissionGranted && (
+                                                <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] text-gray-400 font-inter leading-relaxed select-none group-hover:text-gray-300">
+                                        I authorize Cybrain to perform a security assessment and intercept network patterns on the specified target.
+                                    </span>
+                                </label>
+                            </div>
+
                             <button
                                 onClick={handleExecuteScan}
-                                disabled={loading || !target.trim()}
-                                className={`w-full mt-10 py-5 font-orbitron font-bold text-xs tracking-[0.3em] uppercase rounded-2xl transition-all duration-300 border flex items-center justify-center gap-3 ${
-                                    loading || !target.trim() 
-                                        ? 'border-white/5 bg-white/5 text-gray-600' 
+                                disabled={loading || !target.trim() || !permissionGranted}
+                                className={`w-full mt-6 py-5 font-orbitron font-bold text-xs tracking-[0.3em] uppercase rounded-2xl transition-all duration-300 border flex items-center justify-center gap-3 ${
+                                    loading || !target.trim() || !permissionGranted
+                                        ? 'border-white/5 bg-white/5 text-gray-600 cursor-not-allowed opacity-50' 
                                         : 'border-cyan-500/50 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500 hover:text-black shadow-lg shadow-cyan-500/20'
                                 }`}
                             >

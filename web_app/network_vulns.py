@@ -22,8 +22,8 @@
 
 import re
 import socket
-import requests
-import urllib3
+import requests  # type: ignore
+import urllib3  # type: ignore
 from datetime import datetime
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -350,13 +350,13 @@ class NetworkVulnScanner:
                 continue
             version = ver_m.group(1)
             for vuln_ver, cve, sev, desc in vulns:
-                if version.startswith(vuln_ver):
+                if str(version).startswith(vuln_ver):
                     title = f"Vulnerable Version: {software.title()} {version} ({cve})"
                     self._add(
                         sev, title,
                         f"{desc}. Version {version} is affected. Immediate patch required.",
                         port=port, service=service,
-                        evidence=f"Banner: {banner[:120]} | Version: {version}",
+                        evidence=f"Banner: {str(banner)[:120]} | Version: {version}",  # type: ignore
                         fix=(
                             f"Update {software.title()} to latest stable version.\n"
                             f"Advisory: https://nvd.nist.gov/vuln/detail/{cve}"
@@ -395,7 +395,7 @@ class NetworkVulnScanner:
                 f"TLS 1.0 Enabled on Port {port}",
                 "TLS 1.0 is deprecated and vulnerable to BEAST and POODLE attacks.",
                 port=port, service="TLS",
-                evidence=f"Banner: {banner[:80]}",
+                evidence=f"Banner: {str(banner)[:80]}",  # type: ignore
                 fix="Disable TLS 1.0 and 1.1. Enable TLS 1.2 and 1.3 only.",
                 cve="CVE-2014-3566", cvss="5.9",
             )
@@ -405,7 +405,7 @@ class NetworkVulnScanner:
                 f"TLS 1.1 Enabled on Port {port}",
                 "TLS 1.1 is deprecated. Disable in favour of TLS 1.2+.",
                 port=port, service="TLS",
-                evidence=f"Banner: {banner[:80]}",
+                evidence=f"Banner: {str(banner)[:80]}",  # type: ignore
                 fix="Disable TLS 1.1. Enable TLS 1.2 and 1.3.",
                 cve="CWE-326", cvss="4.3",
             )
@@ -477,7 +477,7 @@ class NetworkVulnScanner:
                             f"OpenSSH {version_str} may have known vulnerabilities. "
                             "Version 8.0+ is recommended.",
                             port=22, service="SSH",
-                            evidence=f"Banner: {banner[:100]}",
+                            evidence=f"Banner: {str(banner)[:100]}",  # type: ignore
                             fix="apt-get upgrade openssh-server",
                             cve="CWE-1104", cvss="5.9",
                         )
@@ -489,7 +489,7 @@ class NetworkVulnScanner:
                         f"Could not parse OpenSSH version '{version_str}'. "
                         "Verify the SSH server is up to date.",
                         port=22, service="SSH",
-                        evidence=f"Banner: {banner[:100]}",
+                        evidence=f"Banner: {str(banner)[:100]}",  # type: ignore
                         fix="apt-get upgrade openssh-server",
                         cve="CWE-1104", cvss="4.0",
                     )
@@ -506,7 +506,7 @@ class NetworkVulnScanner:
                 sev_found = "MEDIUM"
                 desc_found = f"Dropbear SSH {db_ver} is outdated."
                 for vuln_ver, cve, sev, desc in VULNERABLE_VERSIONS.get("dropbear", []):
-                    if db_ver.startswith(vuln_ver):
+                    if str(db_ver).startswith(vuln_ver):
                         cve_found  = cve
                         sev_found  = sev
                         desc_found = desc
@@ -523,13 +523,13 @@ class NetworkVulnScanner:
                     f"Dropbear SSH {db_ver} is in use. {desc_found} "
                     "Dropbear is a lightweight SSH server common on routers and IoT devices.",
                     port=22, service="SSH",
-                    evidence=f"Banner: {banner[:100]}",
+                    evidence=f"Banner: {str(banner)[:100]}",  # type: ignore
                     fix=(
                         "Update Dropbear SSH to the latest release.\n"
                         "For embedded devices: check manufacturer firmware updates.\n"
                         "If this is a router (192.168.x.x), update its firmware."
                     ),
-                    cve=cve_found, cvss="7.5" if sev_found == "HIGH" else "5.3",
+                    cve=str(cve_found), cvss="7.5" if sev_found == "HIGH" else "5.3",
                 )
 
             # ── General SSH brute-force warning (always fires on port 22) ─
@@ -539,7 +539,7 @@ class NetworkVulnScanner:
                 "SSH on port 22 is constantly scanned by automated bots. "
                 "Brute-force and credential stuffing attacks are ongoing.",
                 port=22, service="SSH",
-                evidence=f"Port 22/tcp open | Banner: {banner[:80] if banner else 'N/A'}",
+                evidence=f"Port 22/tcp open | Banner: {str(banner)[:80] if banner else 'N/A'}",  # type: ignore
                 fix=(
                     "1. Change SSH port from 22 to a high port (e.g. 2222).\n"
                     "2. PermitRootLogin no  in /etc/ssh/sshd_config\n"
