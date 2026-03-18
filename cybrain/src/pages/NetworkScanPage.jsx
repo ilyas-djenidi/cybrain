@@ -9,7 +9,38 @@ import SeverityBadge from '../components/SeverityBadge';
  */
 
 const NetworkScanPage = () => {
+    const [target, setTarget] = useState('');
+    const [scanMode, setScanMode] = useState('full');
+    const [loading, setLoading] = useState(false);
+    const [results, setResults] = useState(null);
+    const [error, setError] = useState(null);
+    const [aiAnalysis, setAiAnalysis] = useState('');
+    const [analyzing, setAnalyzing] = useState(false);
     const [permissionGranted, setPermissionGranted] = useState(false);
+
+    const scanModes = [
+        { 
+            id: 'full', 
+            label: 'Deep Infiltration', 
+            desc: 'Comprehensive scan (Ports + Services + OS)', 
+            icon: '🔍',
+            color: 'cyan'
+        },
+        { 
+            id: 'ports', 
+            label: 'Port Discovery', 
+            desc: 'Identify all active entry points', 
+            icon: '⚡',
+            color: 'blue'
+        },
+        { 
+            id: 'quick', 
+            label: 'Surveillance Mode', 
+            desc: 'Rapid scan of common top 100 ports', 
+            icon: '📡',
+            color: 'purple'
+        }
+    ];
 
     const handleExecuteScan = async () => {
         if (!target.trim() || !permissionGranted) return;
