@@ -19,19 +19,22 @@ import re
 import json
 from datetime import datetime
 
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+_OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+
 try:
     import google.generativeai as genai
-    import requests
-    from dotenv import load_dotenv
-    load_dotenv()
     _API_KEY = os.environ.get("GEMINI_API_KEY", "")
-    _OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
     if _API_KEY:
         genai.configure(api_key=_API_KEY)
     _GENAI_AVAILABLE = bool(_API_KEY)
-except ImportError:
+except Exception as e:
     _GENAI_AVAILABLE = False
-    _OPENROUTER_KEY = ""
+    print(f"[ENGINE] AI initialization failed: {e}")
 
 CVE_DATABASE = {
     "SQL Injection": {
@@ -217,9 +220,11 @@ class CybrainAgent:
 
         if _GENAI_AVAILABLE:
             try:
-                self.model     = genai.GenerativeModel("gemini-2.0-flash")
+                # Use 1.5-flash for better compatibility with older library versions like 0.5.4
+                model_name = "gemini-1.5-flash"
+                self.model     = genai.GenerativeModel(model_name)
                 self.ai_active = True
-                print("[ENGINE] Gemini 2.0 Flash connected [OK]")
+                print(f"[ENGINE] Gemini {model_name} connected [OK]")
             except Exception as e:
                 print("[ENGINE] Gemini unavailable: {} - offline mode active".format(e))
         else:
@@ -262,8 +267,13 @@ class CybrainAgent:
             else:
                 print(f"[ENGINE] OpenRouter error {resp.status_code}: {resp.text}")
                 return None
+        except requests.exceptions.Timeout:
+            print("[ENGINE] OpenRouter request timed out (30s)")
+            return None
         except Exception as e:
-            print(f"[ENGINE] OpenRouter call failed: {e}")
+            print(f"[ENGINE] OpenRouter critical error: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     # =========================================================================
