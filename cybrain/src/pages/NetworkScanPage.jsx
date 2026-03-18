@@ -20,6 +20,7 @@ const NetworkScanPage = () => {
     const [permissionGranted, setPermissionGranted] = useState(false);
     const [scanProgress, setScanProgress] = useState(0);
     const [isLocalScan, setIsLocalScan] = useState(false);
+    const [scanStatusText, setScanStatusText] = useState('');
 
     const scanModes = [
         { 
@@ -68,7 +69,10 @@ const NetworkScanPage = () => {
                 const data = await runLocalScan(
                     discoveryTarget,
                     scanMode,
-                    (done, total) => setScanProgress(Math.round((done / total) * 100))
+                    (done, total, statusText) => {
+                        setScanProgress(done);
+                        if (statusText) setScanStatusText(statusText);
+                    }
                 );
                 setResults(data);
             } else {
@@ -289,10 +293,10 @@ const NetworkScanPage = () => {
                             {loading && isLocalScan && (
                                 <div className="mt-3">
                                     <div className="flex justify-between text-[9px] font-orbitron text-gray-600 uppercase tracking-widest mb-1.5">
-                                        <span>Probing ports...</span>
+                                        <span className="truncate max-w-[70%]">{scanStatusText || 'Initializing...'}</span>
                                         <span>{scanProgress}%</span>
                                     </div>
-                                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                                         <motion.div
                                             className="h-full bg-gradient-to-r from-green-500 to-cyan-400 rounded-full"
                                             style={{ width: `${scanProgress}%` }}
