@@ -578,7 +578,10 @@ class OWASPChecker:
             r = self._get(f"{self.base}{path}")
             if r and r.status_code == 200:
                 body = r.text.lower()
-                if any(s in body for s in [
+                is_html = any(s in body for s in ["<!doctype html", "<html", "<body"])
+                is_json = "application/json" in r.headers.get("Content-Type", "").lower()
+                # Real IDOR leaks typically happen in JSON API responses, rarely in generic HTML pages (which could be WAF blocks).
+                if not is_html and is_json and any(s in body for s in [
                     "email", "username", "password", "address",
                     "phone", "credit", "firstname", "lastname",
                 ]):
@@ -683,18 +686,18 @@ class OWASPChecker:
 
         # Missing security headers
         required = {
-            "Content-Security-Policy":    ("HIGH",   "CWE-693", "Prevents XSS and data injection."),
-            "Strict-Transport-Security":  ("HIGH",   "CWE-319", "Forces HTTPS."),
-            "X-Frame-Options":            ("MEDIUM", "CWE-1021","Prevents clickjacking."),
-            "X-Content-Type-Options":     ("MEDIUM", "CWE-693", "Prevents MIME sniffing."),
-            "X-XSS-Protection":           ("MEDIUM", "CWE-693", "Legacy XSS filter."),
+            "Content-Security-Policy":    ("MEDIUM", "CWE-693", "Prevents XSS and data injection."),
+            "Strict-Transport-Security":  ("MEDIUM", "CWE-319", "Forces HTTPS."),
+            "X-Frame-Options":            ("LOW",    "CWE-1021","Prevents clickjacking."),
+            "X-Content-Type-Options":     ("LOW",    "CWE-693", "Prevents MIME sniffing."),
+            "X-XSS-Protection":           ("LOW",    "CWE-693", "Legacy XSS filter."),
             "Referrer-Policy":            ("LOW",    "CWE-200", "Controls referrer leakage."),
             "Permissions-Policy":         ("LOW",    "CWE-284", "Restricts browser features."),
             "Cross-Origin-Opener-Policy": ("LOW",    "CWE-346", "Prevents cross-origin attacks."),
         }
         missing = [(h, s, c, d) for h, (s, c, d) in required.items() if h not in resp.headers]
         if missing:
-            worst = "HIGH" if any(s == "HIGH" for _, s, _, _ in missing) else "MEDIUM"
+            worst = "MEDIUM" if any(s == "MEDIUM" for _, s, _, _ in missing) else "LOW"
             header_list = "\n* ".join(f"{h} [{s}] - {d}" for h, s, _, d in missing)
             self._add(
                 "A02:2025", "Security Misconfiguration", worst,
@@ -1193,10 +1196,10 @@ class OWASPChecker:
 
             if not blocked:
                 self._add(
-                    "A06:2025", "Insecure Design", "HIGH",
-                    "No Rate Limiting - Brute Force Risk",
-                    f"Login {login_path}: 12 consecutive failures not blocked.",
-                    evidence=f"12 requests to {login_path} - no HTTP 429",
+                    "A06:2025", "Insecure Design", "LOW",
+                    "No Rate Limiting Detected (Manual Verification Needed)",
+                    f"Login {login_path}: 12 failures did not yield an extreme HTTP 429 response. Note: Silent IP drops or WAF blocks may still be active.",
+                    evidence=f"12 requests to {login_path} - no HTTP 429 received",
                     fix=(
                         "1. Rate limit: max 5 attempts/min.\n"
                         "2. Account lockout after N failures.\n"
@@ -1535,7 +1538,7 @@ class OWASPChecker:
         csp = resp.headers.get("Content-Security-Policy","")
         if not xfo and "frame-ancestors" not in csp:
             self._add(
-                "A02:2025", "Security Misconfiguration", "MEDIUM",
+                "A02:2025", "Security Misconfiguration", "LOW",
                 "Clickjacking Vulnerability (CWE-1021)",
                 "Page can be embedded in iframe on any external site.",
                 fix="X-Frame-Options: DENY  |  CSP: frame-ancestors 'none'",
