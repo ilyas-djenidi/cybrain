@@ -728,13 +728,31 @@ class OWASPChecker:
                 r = self._get(f"{self.base}{path}")
                 if r and r.status_code == 200:
                     content = r.text.lower()
-                    is_spa = any(s in content for s in [
-                        "<!doctype html", "<html", "bundle.js", "react.js",
+                    
+                    # Heuristic: If it looks like an HTML page, it's probably a soft 404 or WAF block page
+                    # disguised as a 200 OK. True sensitive files (.env, .sql, .yml) are rarely HTML.
+                    is_html = any(s in content for s in [
+                        "<!doctype html", "<html", "<body", "bundle.js", "react.js", "<head>", "404 not found", "page not found"
                     ])
-                    if path.endswith(".log") and is_spa:
+                    
+                    # Log files might legitimately contain HTML if they log requests, 
+                    # but if it starts with <!doctype html, it's definitely a soft 404 page.
+                    if is_html and content.strip().startswith(("<!doctype", "<html")):
                         return None
-                    if not kw or any(k in content for k in kw.split("|")):
-                        return {"path": path, "sev": sev, "size": len(r.text)}
+                        
+                    # If it's a known HTML file like phpinfo, bypass the is_html check
+                    is_phpinfo = "phpinfo" in content and ("<html" in content or "<body" in content)
+                    if is_html and not is_phpinfo and (path.endswith(".env") or path.endswith(".yml") or path.endswith(".sql") or path.endswith(".log") or path.endswith(".bak")):
+                         return None
+
+                    if not kw:
+                         # If no keyword required, just checking existence (must not be HTML soft 404)
+                         if not is_html and len(r.text) > 0:
+                             return {"path": path, "sev": sev, "size": len(r.text)}
+                    else:
+                         # Requires specific keyword
+                         if any(k in content for k in kw.split("|")):
+                             return {"path": path, "sev": sev, "size": len(r.text)}
             except Exception:
                 pass
             return None
