@@ -237,8 +237,8 @@ def scan_url():
         url_safe = url
 
         print(f"\n[SCAN_URL] Starting: {url}")
-        from url_scanner import URLScanner  # type: ignore
-        scanner = URLScanner(url)
+        from url_scanner import UrlScanner  # type: ignore
+        scanner = UrlScanner(url)
         results = scanner.scan()
 
         if not isinstance(results, list):
