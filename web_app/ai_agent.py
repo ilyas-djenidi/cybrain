@@ -613,10 +613,11 @@ class CybrainAgent:
                 "Return ONLY the fixed code, no explanation outside the code."
             )
             prompt = (
-                "Language: {}\nFile: {}\n\n"
-                "Fix all security vulnerabilities in this code:\n\n"
-                "```{}\n{}\n```"
-            ).format(lang, filename, lang, content[:6000])
+                f"Fix all security vulnerabilities in the following code. "
+                f"Identify and fix findings like SQLi, XSS, Command Injection, etc. "
+                "Return ONLY the fixed code inside a markdown block.\n\n"
+                f"```{lang}\n{content[:10000]}\n```"
+            )
             ai_fixed = self._gemini(prompt, system=system)
             if ai_fixed:
                 m = re.search(r"```(?:\w+)?\n(.*?)```", ai_fixed, re.DOTALL)
@@ -625,12 +626,10 @@ class CybrainAgent:
                     changes_made.append("[+] AI deep fix applied")
 
         explanation = "\n".join([
-            "## Code Fix Report - {}".format(filename),
+            f"## Code Fix Report - {filename}",
             "",
-            "**Engine:** Cybrain v2.0 ({}Static Fixer)".format(
-                "AI + " if self.ai_active else ""
-            ),
-            "**Changes:** {}".format(len(changes_made)),
+            f"**Engine:** Cybrain v2.0 ({'AI + ' if self.ai_active else ''}Static Fixer)",
+            f"**Changes:** {len(changes_made)}",
             "",
             "## Changes Made",
             "",
@@ -690,8 +689,8 @@ class CybrainAgent:
             )
             prompt = (
                 "Fix all security vulnerabilities in this Apache config:\n\n"
-                "```apache\n{}\n```"
-            ).format(fixed[:6000])
+                f"```apache\n{fixed[:6000]}\n```"
+            )
             ai_fixed = self._call_openrouter(prompt, system=system)
             if ai_fixed:
                 m = re.search(r"```(?:apache)?\n(.*?)```", ai_fixed, re.DOTALL | re.IGNORECASE)
@@ -710,7 +709,7 @@ class CybrainAgent:
             "## Apache Config Fix Report",
             "",
             "**Engine:** Cybrain v2.0",
-            "**Fixes applied:** {}".format(len(changes)),
+            f"**Fixes applied: {len(changes)}**",
             "",
             "## Changes",
             "",
