@@ -21,14 +21,17 @@ from datetime import datetime
 
 try:
     import google.generativeai as genai
+    import requests
     from dotenv import load_dotenv
     load_dotenv()
     _API_KEY = os.environ.get("GEMINI_API_KEY", "")
+    _OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
     if _API_KEY:
         genai.configure(api_key=_API_KEY)
     _GENAI_AVAILABLE = bool(_API_KEY)
 except ImportError:
     _GENAI_AVAILABLE = False
+    _OPENROUTER_KEY = ""
 
 CVE_DATABASE = {
     "SQL Injection": {
@@ -210,6 +213,7 @@ class CybrainAgent:
         self.current_context = {}
         self.ai_active       = False
         self.model           = None
+        self.openrouter_key  = _OPENROUTER_KEY
 
         if _GENAI_AVAILABLE:
             try:
@@ -231,6 +235,35 @@ class CybrainAgent:
             return resp.text
         except Exception as e:
             print("[ENGINE] Gemini call failed: {}".format(e))
+            return None
+
+    def _call_openrouter(self, prompt, system=""):
+        """Call OpenRouter (Mistral/Llama). Returns text or None on failure."""
+        if not self.openrouter_key:
+            return None
+        try:
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_key}",
+                "HTTP-Referer": "https://cybrain-ai.netlify.app",
+                "X-Title": "Cybrain AI",
+            }
+            payload = {
+                "model": "openrouter/free",
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt}
+                ]
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=30)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data['choices'][0]['message']['content']
+            else:
+                print(f"[ENGINE] OpenRouter error {resp.status_code}: {resp.text}")
+                return None
+        except Exception as e:
+            print(f"[ENGINE] OpenRouter call failed: {e}")
             return None
 
     # =========================================================================
@@ -648,6 +681,27 @@ class CybrainAgent:
             changes.append(
                 "[!] Manual fix needed: Move ProxyPass outside <Directory>"
             )
+
+        if self.openrouter_key:
+            system = (
+                "You are an Apache Security Hardening expert. Fix ALL security vulnerabilities "
+                "in the provided configuration. Apply industry best practices (CIS benchmarks). "
+                "Return ONLY the fixed configuration, no explanation outside the code."
+            )
+            prompt = (
+                "Fix all security vulnerabilities in this Apache config:\n\n"
+                "```apache\n{}\n```"
+            ).format(fixed[:6000])
+            ai_fixed = self._call_openrouter(prompt, system=system)
+            if ai_fixed:
+                m = re.search(r"```(?:apache)?\n(.*?)```", ai_fixed, re.DOTALL | re.IGNORECASE)
+                if m:
+                    fixed = m.group(1)
+                    changes.append("[+] OpenRouter deep hardening applied")
+                else:
+                    # If not in code block, try to clean it
+                    fixed = ai_fixed.strip()
+                    changes.append("[+] OpenRouter deep hardening applied (raw)")
 
         if not changes:
             changes = ["Config looks clean - no automatic fixes applied."]
